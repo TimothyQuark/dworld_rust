@@ -1,7 +1,5 @@
-use super::{
-    CombatStats, Map, Player, Position, RunState, State, TileType, Viewshed, WantsToMelee,
-};
-use rltk::{console, Point, Rltk, VirtualKeyCode};
+use super::{CombatStats, Map, Player, Position, RunState, State, Viewshed, WantsToMelee};
+use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
 use std::cmp::{max, min};
 
