@@ -3,13 +3,15 @@ use rltk::{RandomNumberGenerator, RGB};
 extern crate specs;
 use super::{
     map::MAPWIDTH, AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InflictsDamage,
-    Item, Monster, Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, Viewshed,
+    Item, Monster, Name, Player, SerializeMe, Position, ProvidesHealing, Ranged, Rect, Renderable, Viewshed,
 };
 use specs::prelude::*;
+use crate::specs::saveload::{MarkedBuilder, SimpleMarker};
 
 /// Spawns the player and returns his/her entity object.
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position {
             x: player_x,
             y: player_y,
@@ -63,6 +65,7 @@ const MAX_ITEMS: i32 = 2;
 
 fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph,
@@ -143,6 +146,7 @@ pub fn spawn_room(ecs: &mut World, room: &Rect) {
 
 fn health_potion(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437('¡'),
@@ -161,6 +165,7 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) {
 
 fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
@@ -194,6 +199,7 @@ fn random_item(ecs: &mut World, x: i32, y: i32) {
 
 fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
@@ -214,6 +220,7 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
 
 fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+    .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
