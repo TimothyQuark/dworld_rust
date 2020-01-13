@@ -21,7 +21,7 @@ use amethyst::{
         types::DefaultBackend,
         RenderDebugLines, RenderFlat2D, RenderToWindow, RenderingBundle, Texture,
     },
-    tiles::{RenderTiles2D, Tile, TileMap},
+    tiles::{MapStorage, MortonEncoder2D, RenderTiles2D, Tile, TileMap, CoordinateEncoder},
     utils::application_root_dir,
     window::ScreenDimensions,
     winit,
@@ -109,11 +109,58 @@ fn init_camera(world: &mut World, parent: Entity, transform: Transform, camera: 
         .build()
 }
 
-#[derive(Default, Clone)]
-struct ExampleTile;
+#[derive(Clone)]
+struct ExampleTile {
+    glyph_num : usize,
+}
+
+impl Default for ExampleTile {
+
+    fn default() -> Self {
+        Self {glyph_num : 0}
+    }
+}
+
 impl Tile for ExampleTile {
-    fn sprite(&self, _: Point3<u32>, _: &World) -> Option<usize> {
-        Some(0) // Default tile, used when first loaded
+    fn sprite(&self, _coord: Point3<u32>, _world: &World) -> Option<usize> {
+        Some(self.glyph_num) // Default tile, used when first loaded
+    }
+
+}
+
+
+
+struct ChangeMapTiles {}
+
+impl Default for ChangeMapTiles {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+impl<'s> System<'s> for ChangeMapTiles {
+    type SystemData = (
+        WriteStorage<'s, TileMap<ExampleTile, MortonEncoder2D> >,
+        Read<'s, InputHandler<StringBindings>>,
+    );
+
+    fn run(&mut self, (mut tilemaps, input): Self::SystemData) {
+        if input.key_is_down(winit::VirtualKeyCode::A) {
+            let mut a = 1;
+            for tilemap in (&mut tilemaps).join() {
+                let point = Point3::new(20, 20, 0);
+                //println!("A tilemap was found! {}", a);
+                a += 1;
+                let to_change = tilemap.get_mut(&point);
+                if let Some(m) = &to_change {
+                    to_change.unwrap().glyph_num += 1;
+                }
+                else {
+                    println!("Point does not have corresponding tile");
+                }
+                
+            }
+        }
     }
 }
 
@@ -148,7 +195,7 @@ impl SimpleState for InitialState {
             Camera::standard_2d(width, height),
         );
 
-        let map = TileMap::<ExampleTile>::new(
+        let map = TileMap::<ExampleTile, MortonEncoder2D>::new(
             Vector3::new(48, 48, 1),  // Dimensions
             Vector3::new(20, 20, 1),  // Tile dimensions
             Some(font_sprite_handle), // Sprite sheet
@@ -159,8 +206,6 @@ impl SimpleState for InitialState {
             .with(map)
             .with(Transform::default())
             .build();
-
-        
     }
 
     fn handle_event(
@@ -191,16 +236,18 @@ fn main() -> amethyst::Result<()> {
     let display_config_path = config_dir.join("display.ron");
 
     let game_data = GameDataBuilder::default()
+        .with_bundle(TransformBundle::new())?
+        .with_bundle(InputBundle::<StringBindings>::new())? // Bundle for handling input
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(
                     RenderToWindow::from_config_path(display_config_path)?
                         .with_clear([0.34, 0.36, 0.52, 1.0]),
                 )
-                .with_plugin(RenderFlat2D::default())
-                .with_plugin(RenderTiles2D::<ExampleTile>::default()),
+                .with_plugin(RenderFlat2D::default()) // Plugin for handling 2D rendering
+                .with_plugin(RenderTiles2D::<ExampleTile, MortonEncoder2D>::default()), // Plugin for handling 2D tilemaps
         )?
-        .with_bundle(TransformBundle::new())?;
+        .with(ChangeMapTiles::default(), "ChangeMapTiles", &[]);
 
     let mut game = Application::build(resources_directory, InitialState)?.build(game_data)?;
     game.run();
