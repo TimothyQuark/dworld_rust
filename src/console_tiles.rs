@@ -1,12 +1,13 @@
 use amethyst::{
     core::math::Point3,
-    ecs::{Join, Read, System, WriteStorage},
+    ecs::{Join, Read, System, WriteStorage, ReadExpect},
     input::{InputHandler, StringBindings},
     prelude::*,
     renderer::palette::Srgba,
     tiles::{FlatEncoder, MapStorage, Tile, TileMap},
     winit,
 };
+use crate::game_resources::{GameInfo};
 
 #[derive(Clone)]
 pub struct ConsoleTile {
@@ -41,25 +42,30 @@ impl Default for UpdateConsoleSprites {
     }
 }
 
+// This is just a system for testing out things
 impl<'s> System<'s> for UpdateConsoleSprites {
     type SystemData = (
         WriteStorage<'s, TileMap<ConsoleTile, FlatEncoder>>,
+        ReadExpect<'s, GameInfo>,
         Read<'s, InputHandler<StringBindings>>,
     );
 
-    fn run(&mut self, (mut tilemaps, input): Self::SystemData) {
+    fn run(&mut self, (mut tilemaps, gameinfo, input): Self::SystemData) {
         if input.key_is_down(winit::VirtualKeyCode::A) {
-            let mut a = 1;
-            for tilemap in (&mut tilemaps).join() {
-                let point = Point3::new(30, 30, 0);
-                //println!("A tilemap was found! {}", a);
-                a += 1;
-                let to_change = tilemap.get_mut(&point);
-                if let Some(m) = &to_change {
-                    to_change.unwrap().glyph += 1;
-                } else {
-                    println!("Point does not have corresponding tile");
-                }
+            let map_height = gameinfo.tilemap_height;
+            let map_width = gameinfo.tilemap_width;
+
+            for map in (&mut tilemaps).join() {
+                amethyst::tiles::iters::Region::new(Point3::new(0, 0, 0), Point3::new(map_width - 1, map_height - 1, 1))
+                    .iter()
+                    .for_each(|coord| {
+                        if let Some(fg) = map.get_mut(&coord) {
+                            fg.glyph += 1;
+                            fg.color.color.red = 1.0;
+                            fg.color.color.green = 0.0;
+                            fg.color.color.blue = 0.0;
+                        }
+                    })
             }
         }
     }

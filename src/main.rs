@@ -29,8 +29,9 @@ use amethyst::{
 
 mod startup_state;
 use startup_state::StartUpState;
-mod console_tiles_system;
-use console_tiles_system::{ConsoleTile, UpdateConsoleSprites};
+mod console_tiles;
+use console_tiles::{ConsoleTile, UpdateConsoleSprites};
+mod game_resources;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default()); // Amethyst logger
