@@ -2,6 +2,4 @@
   title: "dworld_rust",
   // Dimensions of the program window
   dimensions: Some((640, 480)),
-  // Dimensions of the font being used
-  font_dim: Some((20, 20)),
 )

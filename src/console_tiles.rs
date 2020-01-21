@@ -1,13 +1,14 @@
+use crate::game_resources::GameInfo;
 use amethyst::{
     core::math::Point3,
-    ecs::{Join, Read, System, WriteStorage, ReadExpect},
+    core::Named,
+    ecs::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage},
     input::{InputHandler, StringBindings},
     prelude::*,
     renderer::palette::Srgba,
     tiles::{FlatEncoder, MapStorage, Tile, TileMap},
     winit,
 };
-use crate::game_resources::{GameInfo};
 
 #[derive(Clone)]
 pub struct ConsoleTile {
@@ -46,17 +47,22 @@ impl Default for UpdateConsoleSprites {
 impl<'s> System<'s> for UpdateConsoleSprites {
     type SystemData = (
         WriteStorage<'s, TileMap<ConsoleTile, FlatEncoder>>,
+        ReadStorage<'s, Named>,
         ReadExpect<'s, GameInfo>,
         Read<'s, InputHandler<StringBindings>>,
     );
 
-    fn run(&mut self, (mut tilemaps, gameinfo, input): Self::SystemData) {
+    fn run(&mut self, (mut tilemaps, names, gameinfo, input): Self::SystemData) {
         if input.key_is_down(winit::VirtualKeyCode::A) {
             let map_height = gameinfo.tilemap_height;
             let map_width = gameinfo.tilemap_width;
 
-            for map in (&mut tilemaps).join() {
-                amethyst::tiles::iters::Region::new(Point3::new(0, 0, 0), Point3::new(map_width - 1, map_height - 1, 1))
+            for (map, name) in (&mut tilemaps, &names).join() {
+                if name.name == "fg_map" {
+                    amethyst::tiles::iters::Region::new(
+                        Point3::new(0, 0, 0),
+                        Point3::new(map_width - 1, map_height - 1, 1),
+                    )
                     .iter()
                     .for_each(|coord| {
                         if let Some(fg) = map.get_mut(&coord) {
@@ -66,6 +72,22 @@ impl<'s> System<'s> for UpdateConsoleSprites {
                             fg.color.color.blue = 0.0;
                         }
                     })
+                }
+                else if name.name == "bg_map" {
+                    amethyst::tiles::iters::Region::new(
+                        Point3::new(0, 0, 0),
+                        Point3::new(map_width - 1, map_height - 1, 1),
+                    )
+                    .iter()
+                    .for_each(|coord| {
+                        if let Some(fg) = map.get_mut(&coord) {
+                            fg.glyph = 0;
+                            fg.color.color.red = 0.0;
+                            fg.color.color.green = 0.0;
+                            fg.color.color.blue = 1.0;
+                        }
+                    })
+                }
             }
         }
     }
