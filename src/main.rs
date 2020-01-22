@@ -29,9 +29,11 @@ use amethyst::{
 
 mod startup_state;
 use startup_state::StartUpState;
-mod console_tiles;
-use console_tiles::{ConsoleTile, UpdateConsoleSprites};
+mod console;
+
 mod game_resources;
+pub mod rendering;
+use rendering::render::{RenderConsoleToScreen, RenderTile};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default()); // Amethyst logger
@@ -52,9 +54,13 @@ fn main() -> amethyst::Result<()> {
                         .with_clear([0.34, 0.36, 0.52, 1.0]),
                 )
                 .with_plugin(RenderFlat2D::default()) // Plugin for handling 2D rendering
-                .with_plugin(RenderTiles2D::<ConsoleTile, FlatEncoder>::default()), // Plugin for handling 2D tilemaps
+                .with_plugin(RenderTiles2D::<RenderTile, FlatEncoder>::default()), // Plugin for handling 2D tilemaps
         )?
-        .with(UpdateConsoleSprites::default(), "UpdateConsoleSprites", &[]);
+        .with(
+            RenderConsoleToScreen::default(),
+            "RenderConsoleToScreen",
+            &[],
+        );
 
     let mut game = Application::build(resources_directory, StartUpState)?.build(game_data)?;
 

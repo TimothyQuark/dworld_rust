@@ -14,7 +14,8 @@ use amethyst::{
     winit,
 };
 
-use super::ConsoleTile;
+use super::RenderTile;
+use crate::console::Console;
 use crate::game_resources::GameInfo;
 
 // The initial game state, called when the program opens up. Does things such
@@ -25,13 +26,15 @@ impl SimpleState for StartUpState {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
         world.register::<Named>();
-        world.register::<TileMap<ConsoleTile>>();
+        world.register::<TileMap<RenderTile>>();
 
         world.insert(GameInfo::default());
 
         // Keep these the same
-        let fg_sprite_handle = load_sprite_sheet(world, "cp437_20x20_transparent.png", "cp437_20x20.ron");
-        let bg_front_handle = load_sprite_sheet(world, "cp437_20x20_transparent.png", "cp437_20x20.ron");
+        let fg_sprite_handle =
+            load_sprite_sheet(world, "cp437_20x20_transparent.png", "cp437_20x20.ron");
+        let bg_front_handle =
+            load_sprite_sheet(world, "cp437_20x20_transparent.png", "cp437_20x20.ron");
 
         // Dimensions of the game window
         let (screen_width, screen_height) = {
@@ -68,13 +71,12 @@ impl SimpleState for StartUpState {
                 game_info.tilemap_height = map_height_tiles as u32;
             }
 
-
             // The order in which these entities are created matters: cannot find a different
             // way to set rendering order. Later maps have priority, i.e draw over other maps
-            let bg_map = TileMap::<ConsoleTile, FlatEncoder>::new(
+            let bg_map = TileMap::<RenderTile, FlatEncoder>::new(
                 Vector3::new(map_width_tiles, map_height_tiles, 1), // Dimensions (# of tiles)
                 Vector3::new(font_size.0 as u32, font_size.1 as u32, 1), // Tile dimensions
-                Some(bg_front_handle),                        // Sprite sheet
+                Some(bg_front_handle),                              // Sprite sheet
             );
 
             let mut bg_map_transform = Transform::default();
@@ -90,10 +92,10 @@ impl SimpleState for StartUpState {
                 .named("bg_map")
                 .build();
 
-            let fg_map = TileMap::<ConsoleTile, FlatEncoder>::new(
+            let fg_map = TileMap::<RenderTile, FlatEncoder>::new(
                 Vector3::new(map_width_tiles, map_height_tiles, 1), // Dimensions (# of tiles and z-levels (usually just 1 level))
                 Vector3::new(font_size.0 as u32, font_size.1 as u32, 1), // Tile dimensions
-                Some(fg_sprite_handle),                        // Sprite sheet
+                Some(fg_sprite_handle),                             // Sprite sheet
             );
 
             let mut fg_map_transform = Transform::default();
@@ -108,6 +110,11 @@ impl SimpleState for StartUpState {
                 .with(fg_map_transform)
                 .named("fg_map")
                 .build();
+
+            let console = Console::init(map_width_tiles, map_height_tiles);
+
+            // Console is a global resource
+            world.insert(console);
         }
     }
 

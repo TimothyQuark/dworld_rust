@@ -1,5 +1,5 @@
 (
   title: "dworld_rust",
   // Dimensions of the program window
-  dimensions: Some((640, 480)),
+  dimensions: Some((1080, 720)),
 )
