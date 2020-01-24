@@ -3,12 +3,11 @@ use crate::game_resources::GameInfo;
 use amethyst::{
     core::math::Point3,
     core::Named,
-    ecs::{Join, Read, ReadExpect, ReadStorage, System, WriteExpect, WriteStorage},
-    input::{InputHandler, StringBindings},
+    ecs::{Join, ReadExpect, ReadStorage, System, WriteExpect, WriteStorage},
+    //input::{InputHandler, StringBindings},
     prelude::*,
     renderer::palette::Srgba,
     tiles::{FlatEncoder, MapStorage, Tile, TileMap},
-    winit,
 };
 
 #[derive(Clone, Debug)]
@@ -21,7 +20,7 @@ impl Default for RenderTile {
     fn default() -> Self {
         RenderTile {
             glyph: 0, // 0 is filled tiled, 46 is ., 32 is transparent tile
-            color: Srgba::new(0.5, 0.5, 0.5, 1.0),
+            color: Srgba::new(1.0, 0.0, 0.0, 1.0), // Default red to show errors
         }
     }
 }
@@ -52,26 +51,17 @@ impl<'s> System<'s> for RenderConsoleToScreen {
         ReadStorage<'s, Named>,
         ReadExpect<'s, GameInfo>,
         WriteExpect<'s, Console>,
-        Read<'s, InputHandler<StringBindings>>,
+        //Read<'s, InputHandler<StringBindings>>,
     );
 
-    fn run(&mut self, (mut tilemaps, names, gameinfo, mut console, input): Self::SystemData) {
-        
-        // if input.key_is_down(winit::VirtualKeyCode::A) {
-        //     let fg = Srgba::new(0.0, 1.0, 0.0, 1.0);
-        //     let bg = Srgba::new(0.0, 0.0, 1.0, 1.0);
-        //     console.print(1, 1, 12, fg, bg);
-        //     console.print(2, 2, 1, fg, bg);
-        //     console.print(3, 3, 3, fg, bg);
-        //     console.print(4, 4, 5, fg, bg);
-        //     console.print(5, 5, 7, fg, bg);
-        //     console.print(53, 35, 255, fg, bg);
-        // }
+    fn run(&mut self, (mut tilemaps, names, gameinfo, mut console): Self::SystemData) {
 
         // Console has not been modified, no need to redraw, exits system
         if !console.is_dirty {
             return;
         }
+
+        console.is_dirty = false;
 
         let map_height = gameinfo.tilemap_height;
         let map_width = gameinfo.tilemap_width;
@@ -109,7 +99,5 @@ impl<'s> System<'s> for RenderConsoleToScreen {
                 );
             }
         }
-
-        console.is_dirty = false;
     }
 }
