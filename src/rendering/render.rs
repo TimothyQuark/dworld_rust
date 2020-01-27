@@ -46,6 +46,7 @@ impl Default for RenderConsoleToScreen {
 }
 
 impl<'s> System<'s> for RenderConsoleToScreen {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         WriteStorage<'s, TileMap<RenderTile, FlatEncoder>>,
         ReadStorage<'s, Named>,

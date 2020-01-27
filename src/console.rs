@@ -113,7 +113,8 @@ impl Console {
     }
 
     /// Draw a box without fill using a custom tile
-    pub fn draw_custom_fillbox(
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_fillbox(
         &mut self,
         x: u32,
         y: u32,

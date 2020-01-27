@@ -64,7 +64,7 @@ impl<'s> System<'s> for KeyboardTestSystem {
                     let fg = Srgba::new(0.0, 0.5, 0.5, 1.0); // Dirty green blue
                     let bg = Srgba::new(0.5, 0.0, 0.0, 1.0); // Red
 
-                    console.draw_custom_fillbox(5, 5, 5, 5, to_cp437('*') as usize, fg, bg);
+                    console.draw_fillbox(5, 5, 5, 5, to_cp437('*') as usize, fg, bg);
 
                     console.draw_box(30, 30, 5, 5, fg, bg);
                 }
