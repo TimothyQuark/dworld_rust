@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 #amethyst = { version = "0.13.2", features = ["vulkan", "tiles" ], optional = false }
 # Use this until the better sprite sheet rons are added to  stable
-amethyst = { git = "https://github.com/amethyst/amethyst", features = ["vulkan", "tiles" ], rev = "master" }
+amethyst = { git = "https://github.com/amethyst/amethyst", features = [ "vulkan", "tiles" ], rev = "master" }
 
 
 # Debug version : cargo build

@@ -19,7 +19,7 @@ pub struct RenderTile {
 impl Default for RenderTile {
     fn default() -> Self {
         RenderTile {
-            glyph: 0, // 0 is filled tiled, 46 is ., 32 is transparent tile
+            glyph: 0,                              // 0 is filled tiled, 46 is ., 32 is transparent tile
             color: Srgba::new(1.0, 0.0, 0.0, 1.0), // Default red to show errors
         }
     }
@@ -55,7 +55,6 @@ impl<'s> System<'s> for RenderConsoleToScreen {
     );
 
     fn run(&mut self, (mut tilemaps, names, gameinfo, mut console): Self::SystemData) {
-
         // Console has not been modified, no need to redraw, exits system
         if !console.is_dirty {
             return;
