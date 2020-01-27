@@ -92,7 +92,7 @@ impl Console {
         self.is_dirty = true;
 
         let bytes = string_to_cp437(output);
-        let idx = (y * self.width + x) as usize;
+        let mut idx = (y * self.width + x) as usize;
 
         for glyph in bytes {
             // Check if out of console bounds
@@ -101,6 +101,8 @@ impl Console {
                 self.tiles[idx].glyph = glyph as usize;
                 self.tiles[idx].fg = fg;
                 self.tiles[idx].bg = bg;
+
+                idx += 1;
             }
         }
     }

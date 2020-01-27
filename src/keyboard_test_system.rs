@@ -37,7 +37,7 @@ impl<'s> System<'s> for KeyboardTestSystem {
 
                     console.print_str(10, 10, "Hello World");
 
-                    console.print_str_cl(10, 10, "Hello World", fg, bg);
+                    console.print_str_cl(20, 20, "Hello World", fg, bg);
                 },
                 VirtualKeyCode::Q => {
                     console.cls();
