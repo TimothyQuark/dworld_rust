@@ -1,7 +1,6 @@
 use amethyst::{
     assets::{AssetStorage, Loader},
     core::{math::Vector3, Named, Transform},
-    input::{is_close_requested, is_key_down},
     prelude::*,
     renderer::{
         camera::{Camera, Projection},
@@ -11,15 +10,18 @@ use amethyst::{
     },
     tiles::{FlatEncoder, TileMap},
     window::ScreenDimensions,
-    winit,
+    winit::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
 };
 
-use super::RenderTile;
-use crate::console::Console;
+use crate::console_util::console::Console;
 use crate::game_resources::GameInfo;
+use crate::states::main_menu_state::MainMenuState;
+use crate::systems::render_system::RenderTile;
 
-// The initial game state, called when the program opens up. Does things such
-// as create the consoles tiles.
+use crate::components::{Position, Renderable};
+
+// The initial game state, called when the program opens up. Creates
+// the console, camera and spritesheet.
 pub struct StartUpState;
 
 impl SimpleState for StartUpState {
@@ -27,7 +29,10 @@ impl SimpleState for StartUpState {
         let world = data.world;
         world.register::<Named>();
         world.register::<TileMap<RenderTile>>();
+        world.register::<Position>();
+        world.register::<Renderable>();
 
+        // Storage place for info that is available all over the game. Usually for rendering
         world.insert(GameInfo::default());
 
         // Keep these the same
@@ -125,10 +130,21 @@ impl SimpleState for StartUpState {
     ) -> SimpleTrans {
         let StateData { .. } = data;
         if let StateEvent::Window(event) = &event {
-            if is_close_requested(&event) || is_key_down(&event, winit::VirtualKeyCode::Escape) {
-                Trans::Quit
-            } else {
-                Trans::None
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    }
+                    | WindowEvent::CloseRequested => Trans::Quit,
+                    _ => Trans::None,
+                },
+                // If nothing wrong, transition to Main Menu
+                _ => Trans::Push(Box::new(MainMenuState)),
             }
         } else {
             Trans::None

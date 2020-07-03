@@ -1,4 +1,4 @@
-use super::utilities::{string_to_cp437, to_cp437};
+use crate::utilities::{string_to_cp437, to_cp437};
 use amethyst::renderer::palette::Srgba;
 
 pub struct ConsoleTile {
@@ -70,7 +70,7 @@ impl Console {
     /// fits on one row of the console
     pub fn print_str(&mut self, x: u32, y: u32, output: &str) {
         let bytes = string_to_cp437(output);
-        let mut idx = (y * self.width + x) as usize;
+        let mut idx = x as usize;
         let fg = Srgba::new(1.0, 1.0, 1.0, 1.0); // White
         let bg = Srgba::new(0.0, 0.0, 0.0, 1.0); // Black
 
@@ -87,7 +87,7 @@ impl Console {
     /// fits on one row of the console
     pub fn print_str_cl(&mut self, x: u32, y: u32, output: &str, fg: Srgba, bg: Srgba) {
         let bytes = string_to_cp437(output);
-        let mut idx = (y * self.width + x) as usize;
+        let mut idx = x as usize;
 
         for glyph in bytes {
             // Check if out of console bounds

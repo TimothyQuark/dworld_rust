@@ -27,18 +27,22 @@ use amethyst::{
     winit,
 };
 
-mod startup_state;
-use startup_state::StartUpState;
-mod console;
+mod states;
+use states::{main_menu_state::MainMenuState, startup_state::StartUpState};
+
+mod console_util;
 
 mod game_resources;
-mod rendering;
-use rendering::render::{RenderConsoleToScreen, RenderTile};
+
+mod components;
+
+mod systems;
+use systems::render_system::{RenderConsoleToScreen, RenderTile};
 
 mod utilities;
 
-mod keyboard_test_system;
-use keyboard_test_system::KeyboardTestSystem;
+//mod keyboard_test_system;
+//use keyboard_test_system::KeyboardTestSystem;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default()); // Amethyst logger
@@ -65,8 +69,8 @@ fn main() -> amethyst::Result<()> {
             RenderConsoleToScreen::default(),
             "RenderConsoleToScreen",
             &[],
-        )
-        .with(KeyboardTestSystem::default(), "KeyBoardTestSystem", &[]);
+        );
+    //.with(KeyboardTestSystem::default(), "KeyBoardTestSystem", &[]);
 
     let mut game = Application::build(resources_directory, StartUpState)?.build(game_data)?;
 

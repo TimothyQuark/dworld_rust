@@ -1,5 +1,3 @@
-use crate::console::Console;
-use crate::game_resources::GameInfo;
 use amethyst::{
     core::math::Point3,
     core::Named,
@@ -9,6 +7,9 @@ use amethyst::{
     renderer::palette::Srgba,
     tiles::{FlatEncoder, MapStorage, Tile, TileMap},
 };
+
+use crate::console_util::console::Console;
+use crate::game_resources::GameInfo;
 
 #[derive(Clone, Debug)]
 pub struct RenderTile {
