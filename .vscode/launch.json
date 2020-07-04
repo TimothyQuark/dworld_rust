@@ -14,6 +14,43 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'dworld_rust'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=dworld_rust",
+                    "--package=dworld_rust"
+                ],
+                "filter": {
+                    "name": "dworld_rust",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'dworld_rust'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=dworld_rust",
+                    "--package=dworld_rust"
+                ],
+                "filter": {
+                    "name": "dworld_rust",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

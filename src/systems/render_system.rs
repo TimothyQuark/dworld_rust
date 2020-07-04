@@ -8,7 +8,7 @@ use amethyst::{
     tiles::{FlatEncoder, MapStorage, Tile, TileMap},
 };
 
-use crate::console_util::console::Console;
+use crate::console_util::Console;
 use crate::game_resources::GameInfo;
 
 #[derive(Clone, Debug)]

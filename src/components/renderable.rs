@@ -1,6 +1,7 @@
 use amethyst::ecs::prelude::{Component, VecStorage};
 use amethyst::renderer::palette::Srgba;
 
+#[derive(Debug)]
 pub struct Renderable {
     glyph: char,
     fg: Srgba,

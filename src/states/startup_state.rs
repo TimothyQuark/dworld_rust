@@ -13,7 +13,7 @@ use amethyst::{
     winit::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
 };
 
-use crate::console_util::console::Console;
+use crate::console_util::Console;
 use crate::game_resources::GameInfo;
 use crate::states::main_menu_state::MainMenuState;
 use crate::systems::render_system::RenderTile;
@@ -22,6 +22,7 @@ use crate::components::{Position, Renderable};
 
 // The initial game state, called when the program opens up. Creates
 // the console, camera and spritesheet.
+#[derive(Default)]
 pub struct StartUpState;
 
 impl SimpleState for StartUpState {
@@ -144,7 +145,7 @@ impl SimpleState for StartUpState {
                     _ => Trans::None,
                 },
                 // If nothing wrong, transition to Main Menu
-                _ => Trans::Push(Box::new(MainMenuState)),
+                _ => Trans::Push(Box::new(MainMenuState { curr_menu_sel: 0 })),
             }
         } else {
             Trans::None

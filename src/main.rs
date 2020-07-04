@@ -1,34 +1,19 @@
 use amethyst::{
-    assets::{AssetStorage, Loader},
     core::{
-        geometry::Plane,
-        math::{Point3, Vector2, Vector3},
-        Named, Parent, Transform, TransformBundle,
+        TransformBundle,
     },
-    ecs::{
-        Component, Entities, Entity, Join, LazyUpdate, NullStorage, Read, ReadExpect, ReadStorage,
-        System, WriteStorage,
-    },
-    input::{is_close_requested, is_key_down, InputBundle, InputHandler, StringBindings},
+    input::{InputBundle,StringBindings},
     prelude::*,
     renderer::{
-        camera::{ActiveCamera, Camera, Projection},
-        debug_drawing::DebugLinesComponent,
-        formats::texture::ImageFormat,
-        palette::Srgba,
-        sprite::{SpriteRender, SpriteSheet, SpriteSheetFormat, SpriteSheetHandle},
-        transparent::Transparent,
         types::DefaultBackend,
-        RenderDebugLines, RenderFlat2D, RenderToWindow, RenderingBundle, Texture,
+        RenderFlat2D, RenderToWindow, RenderingBundle,
     },
-    tiles::{CoordinateEncoder, FlatEncoder, MapStorage, RenderTiles2D, Tile, TileMap},
+    tiles::{ FlatEncoder,  RenderTiles2D},
     utils::application_root_dir,
-    window::ScreenDimensions,
-    winit,
 };
 
 mod states;
-use states::{main_menu_state::MainMenuState, startup_state::StartUpState};
+use states::{StartUpState};
 
 mod console_util;
 
@@ -72,9 +57,8 @@ fn main() -> amethyst::Result<()> {
         );
     //.with(KeyboardTestSystem::default(), "KeyBoardTestSystem", &[]);
 
-    let mut game = Application::build(resources_directory, StartUpState)?.build(game_data)?;
-
+    let mut game =
+        Application::build(resources_directory, StartUpState)?.build(game_data)?;
     game.run();
-
     Ok(())
 }
