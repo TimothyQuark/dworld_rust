@@ -10,8 +10,8 @@ features = ["vulkan", "tiles"] # Or Metal for MacOS
 
 [features]
 default = ["vulkan"]
-#empty = ["amethyst/empty"]
-#metal = ["amethyst/metal"]
+empty = ["amethyst/empty"]
+metal = ["amethyst/metal"]
 vulkan = ["amethyst/vulkan"]
 
 # [profile.dev]

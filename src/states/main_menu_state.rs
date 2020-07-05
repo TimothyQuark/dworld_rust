@@ -1,12 +1,13 @@
 use amethyst::{
+    input::{is_close_requested, is_key_down},
     prelude::*,
-    renderer::{
-        palette::Srgba,
-    },
+    renderer::palette::Srgba,
+    winit::VirtualKeyCode,
 };
 
 use crate::console_util::{selection_box, Console};
 use crate::game_resources::GameInfo;
+#[derive(Default)]
 pub struct MainMenuState {
     pub curr_menu_sel: u32, // Currently selected option
 }
@@ -34,7 +35,7 @@ impl SimpleState for MainMenuState {
         t_half_length = (text.len() / 2) as u32;
         console.print_str(
             gameinfo.tilemap_width / 2 - t_half_length,
-            gameinfo.tile_height / 4  + 1 as u32,
+            gameinfo.tile_height / 4 + 1 as u32,
             &text,
         );
 
@@ -46,7 +47,7 @@ impl SimpleState for MainMenuState {
             gameinfo.tile_height / 4 + 5 as u32,
             &text,
             Srgba::new(0.78, 0.68, 0.5, 1.0),
-            Srgba::new(0.0, 0.0, 0.0, 1.0)
+            Srgba::new(0.0, 0.0, 0.0, 1.0),
         );
 
         // Draw the menu options
@@ -63,11 +64,45 @@ impl SimpleState for MainMenuState {
             gameinfo.tilemap_width / 2,
             gameinfo.tilemap_height / 2, //Print to middle of screen
             menu_options,
-            0,
+            self.curr_menu_sel,
             non_sel_col,
             sel_col,
         );
 
         Trans::None
+    }
+
+    fn handle_event(
+        &mut self,
+        _data: StateData<'_, GameData<'_, '_>>,
+        event: StateEvent,
+    ) -> SimpleTrans {
+        match &event {
+            StateEvent::Window(event) => {
+                if is_close_requested(&event) {
+                    Trans::Quit
+                } else if is_key_down(&event, VirtualKeyCode::Escape) {
+                    //Trans::Push(Box::new(PauseMenuState::default()))
+                    println!("Escape key was pressed, exiting game");
+                    Trans::Quit
+                } else if is_key_down(&event, VirtualKeyCode::Down) {
+                    // If current selection is index 0, ignore key
+                    if self.curr_menu_sel != 3 {
+                        self.curr_menu_sel += 1;
+                    }
+                    Trans::None
+                } else if is_key_down(&event, VirtualKeyCode::Up) {
+                    // If current selection is index 3, ignore key
+                    if self.curr_menu_sel != 0 {
+                        self.curr_menu_sel -= 1;
+                    }
+                    Trans::None
+                } else {
+                    Trans::None
+                }
+            }
+            StateEvent::Ui(ui_event) => Trans::None,
+            StateEvent::Input(input) => Trans::None,
+        }
     }
 }

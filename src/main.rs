@@ -1,19 +1,14 @@
 use amethyst::{
-    core::{
-        TransformBundle,
-    },
-    input::{InputBundle,StringBindings},
+    core::TransformBundle,
+    input::{InputBundle, StringBindings},
     prelude::*,
-    renderer::{
-        types::DefaultBackend,
-        RenderFlat2D, RenderToWindow, RenderingBundle,
-    },
-    tiles::{ FlatEncoder,  RenderTiles2D},
+    renderer::{types::DefaultBackend, RenderFlat2D, RenderToWindow, RenderingBundle},
+    tiles::{FlatEncoder, RenderTiles2D},
     utils::application_root_dir,
 };
 
 mod states;
-use states::{StartUpState};
+use states::StartUpState;
 
 mod console_util;
 
@@ -57,8 +52,7 @@ fn main() -> amethyst::Result<()> {
         );
     //.with(KeyboardTestSystem::default(), "KeyBoardTestSystem", &[]);
 
-    let mut game =
-        Application::build(resources_directory, StartUpState)?.build(game_data)?;
+    let mut game = Application::build(resources_directory, StartUpState)?.build(game_data)?;
     game.run();
     Ok(())
 }
