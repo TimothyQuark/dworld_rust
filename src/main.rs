@@ -1,16 +1,33 @@
-rltk::add_wasm_support!();
-use rltk::{Rltk, GameState, Console};
+use tcod::colors::*;
+use tcod::console::*;
 
-struct State {}
-impl GameState for State {
-    fn tick(&mut self, ctx : &mut Rltk) {
-        ctx.cls();
-        ctx.print(1, 1, "Hello Rust World");
-    }
+const SCREEN_WIDTH : i32 = 80;
+const SCREEN_HEIGHT : i32 = 50;
+
+const LIMIT_FPS : i32 = 144;
+
+struct Tcod {
+    root: Root,
 }
 
 fn main() {
-    let context = Rltk::init_simple8x8(80, 50, "Hello Rust World", "resources");
-    let gs = State{ };
-    rltk::main_loop(context, gs);
+    let root = Root::initializer()
+    .font("arial10x10.png", FontLayout::Tcod)
+    .font_type(FontType::Greyscale)
+    .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+    .title("DWorld")
+    .init();
+
+    tcod::system::set_fps(LIMIT_FPS);
+
+    let mut tcod = Tcod { root };
+
+    while !tcod.root.window_closed() {
+        tcod.root.set_default_foreground(WHITE);
+        tcod.root.clear();
+        tcod.root.put_char(1,1, '@', BackgroundFlag::None);
+        tcod.root.flush();
+        tcod.root.wait_for_keypress(true);
+        
+    }
 }
