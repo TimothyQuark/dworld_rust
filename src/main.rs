@@ -13,7 +13,7 @@ const LIMIT_FPS: i32 = 144;
 
 struct Tcod {
     root: Root,
-    con: Offscreen,
+    //con: Offscreen,
 }
 
 #[derive(Component)]
@@ -31,29 +31,26 @@ struct Renderable {
 
 struct State {
     ecs: World,
-    tcod: Tcod
+    tcod: Tcod,
 }
+#[derive(Debug, Component)]
+struct Player {}
 
-impl State {
-    fn tick(&mut self) {
-        self.tcod.root.clear();
-        
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
+fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
+    let mut positions = ecs.write_storage::<Position>();
+    let mut players = ecs.write_storage::<Player>();
 
-        for (pos, render) in (&positions, &renderables).join() {
-            self.tcod.root.put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
-        }
-        self.tcod.root.flush();
-
-        //handle_keys(self.tcod, player_x, player_y)
-        let key = self.tcod.root.wait_for_keypress(true);
-
+    for (_player, pos) in (&mut players, &mut positions).join() {
+        pos.x = min(SCREEN_WIDTH - 1, max(0, pos.x + delta_x));
+        pos.y = min(SCREEN_HEIGHT - 1, max(0, pos.y + delta_y));
     }
 }
 
-fn handle_keys(tcod: &mut Tcod, player_x: &mut i32, player_y: &mut i32) -> bool {
+fn player_input(gs: &mut State) {
+    let tcod = &mut gs.tcod;
+
     let key = tcod.root.wait_for_keypress(true);
+
     match key {
         Key {
             code: Enter,
@@ -65,17 +62,38 @@ fn handle_keys(tcod: &mut Tcod, player_x: &mut i32, player_y: &mut i32) -> bool 
             tcod.root.set_fullscreen(!fullscreen);
         }
 
-        Key { code: Escape, .. } => return true, // Exit the game
+        //Key { code: Escape, .. } => return true, // Exit the game
 
-        Key { code: Up, .. } => *player_y -= 1,
-        Key { code: Down, .. } => *player_y += 1,
-        Key { code: Left, .. } => *player_x -= 1,
-        Key { code: Right, .. } => *player_x += 1,
+        Key { code: Left, .. } => try_move_player(-1, 0, &mut gs.ecs),
+        Key { code: Right, .. } => try_move_player(1, 0, &mut gs.ecs),
+        Key { code: Up, .. } => try_move_player(0, -1, &mut gs.ecs),
+        Key { code: Down, .. } => try_move_player(0, 1, &mut gs.ecs),
 
         _ => {}
     }
+}
 
-    false
+impl State {
+    fn tick(&mut self) {
+        self.tcod.root.clear();
+
+        player_input(self);
+        self.run_systems();
+
+        let positions = self.ecs.read_storage::<Position>();
+        let renderables = self.ecs.read_storage::<Renderable>();
+
+        for (pos, render) in (&positions, &renderables).join() {
+            self.tcod
+                .root
+                .put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
+        }
+        self.tcod.root.flush();
+    }
+
+    fn run_systems(&mut self) {
+        self.ecs.maintain();
+    }
 }
 
 fn main() {
@@ -88,16 +106,21 @@ fn main() {
         .title("DWorld")
         .init();
 
-    let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+    //let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    let mut tcod_temp = Tcod { root, con };
+    let mut tcod_temp = Tcod { root };
     tcod_temp.root.set_default_foreground(WHITE);
 
-    let mut gs = State { ecs: World::new(), tcod: tcod_temp  };
+    let mut gs = State {
+        ecs: World::new(),
+        tcod: tcod_temp,
+    };
 
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
+    gs.ecs.register::<Player>();
 
+    // Create player
     gs.ecs
         .create_entity()
         .with(Position { x: 40, y: 25 })
@@ -106,6 +129,7 @@ fn main() {
             fg: WHITE,
             bg: BLACK,
         })
+        .with(Player {})
         .build();
 
     for i in 0..10 {
@@ -121,7 +145,6 @@ fn main() {
     }
 
     while !gs.tcod.root.window_closed() {
-
         gs.tick();
     }
 }
