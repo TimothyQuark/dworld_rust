@@ -1,4 +1,3 @@
-use rand::Rng;
 use specs::prelude::*;
 use specs_derive::Component;
 use std::cmp::{max, min};
@@ -7,138 +6,36 @@ use tcod::console::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
-const SCREEN_WIDTH: usize = 60;
-const SCREEN_HEIGHT: usize = 40;
+mod components;
+pub use components::*;
+
+mod map;
+pub use map::*;
+
+mod player;
+pub use player::*;
+
+mod rect;
+pub use rect::Rect;
+
+pub const SCREEN_WIDTH: usize = 60;
+pub const SCREEN_HEIGHT: usize = 40;
 
 const LIMIT_FPS: i32 = 144;
 
-struct Tcod {
+pub struct Tcod {
     root: Root,
     //con: Offscreen,
 }
 
-#[derive(Component)]
-struct Position {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Component)]
-struct Renderable {
-    glyph: char,
-    fg: Color,
-    bg: Color,
-}
-
-#[derive(PartialEq, Copy, Clone)]
-enum TileType {
-    Wall,
-    Floor,
-}
-
-struct State {
+pub struct State {
     ecs: World,
     tcod: Tcod,
-}
-#[derive(Debug, Component)]
-struct Player {}
-
-pub fn xy_idx(x: i32, y: i32) -> usize {
-    (y as usize * SCREEN_WIDTH as usize) + x as usize
-}
-
-fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
-    let mut positions = ecs.write_storage::<Position>();
-    let mut players = ecs.write_storage::<Player>();
-    let map = ecs.fetch::<Vec<TileType>>();
-
-    for (_player, pos) in (&mut players, &mut positions).join() {
-        let destination_idx = xy_idx(pos.x + delta_x, pos.y + delta_y);
-        if map[destination_idx] != TileType::Wall {
-            pos.x = min(SCREEN_WIDTH as i32 - 1, max(0, pos.x + delta_x));
-            pos.y = min(SCREEN_HEIGHT as i32 - 1, max(0, pos.y + delta_y));
-        }
-    }
-}
-
-fn player_input(gs: &mut State) -> bool {
-    let tcod = &mut gs.tcod;
-
-    let key = tcod.root.wait_for_keypress(true);
-
-    match key {
-        Key {
-            code: Enter,
-            alt: true,
-            .. // Ignore all other fields of struct
-        } => {
-            // Toggle to fullscreen
-            let fullscreen = tcod.root.is_fullscreen();
-            tcod.root.set_fullscreen(!fullscreen);
-        }
-
-        Key { code: Escape, .. } => return true, // Exit the game
-
-        Key { code: Left, .. } => try_move_player(-1, 0, &mut gs.ecs),
-        Key { code: Right, .. } => try_move_player(1, 0, &mut gs.ecs),
-        Key { code: Up, .. } => try_move_player(0, -1, &mut gs.ecs),
-        Key { code: Down, .. } => try_move_player(0, 1, &mut gs.ecs),
-
-        _ => {}
-    }
-
-    false
-}
-
-fn new_map() -> Vec<TileType> {
-    let mut map = vec![TileType::Floor; SCREEN_WIDTH * SCREEN_HEIGHT];
-
-    for x in 0..SCREEN_WIDTH as i32 {
-        map[xy_idx(x, 0)] = TileType::Wall;
-        map[xy_idx(x, SCREEN_HEIGHT as i32 - 1)] = TileType::Wall;
-    }
-
-    for y in 0..SCREEN_HEIGHT as i32 {
-        map[xy_idx(0, y)] = TileType::Wall;
-        map[xy_idx(SCREEN_WIDTH as i32 - 1, y)] = TileType::Wall;
-    }
-
-    let mut rng = rand::thread_rng();
-
-    for _i in 0..400 {
-        let x: i32 = rng.gen_range(1, SCREEN_WIDTH as i32);
-        let y: i32 = rng.gen_range(1, SCREEN_HEIGHT as i32);
-
-        let idx = xy_idx(x, y);
-        if idx != xy_idx(SCREEN_WIDTH as i32 / 2, SCREEN_HEIGHT as i32 / 2) {
-            map[idx] = TileType::Wall;
-        }
-    }
-
-    map
-}
-
-fn draw_map(map: &[TileType], tcod: &mut Tcod) {
-    let mut y = 0;
-    let mut x = 0;
-
-    for tile in map.iter() {
-        match tile {
-            TileType::Floor => tcod.root.put_char_ex(x, y, '.', LIGHT_GREY, BLACK),
-            TileType::Wall => tcod.root.put_char_ex(x, y, '#', DARK_GREEN, BLACK),
-        }
-
-        x += 1;
-        if x > SCREEN_WIDTH as i32 - 1 {
-            x = 0;
-            y += 1;
-        }
-    }
 }
 
 impl State {
     fn tick(&mut self) -> bool {
-        self.tcod.root.clear();
+        self.tcod.root.clear(); // Clear the screen every tick
 
         let exit = player_input(self);
 
@@ -185,7 +82,9 @@ fn main() {
         tcod: tcod_temp,
     };
 
-    gs.ecs.insert(new_map());
+    let (rooms, map) = new_map_rooms_and_corridors();
+    gs.ecs.insert(map);
+    let (player_x, player_y) = rooms[0].center();
 
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
@@ -194,7 +93,10 @@ fn main() {
     // Create player
     gs.ecs
         .create_entity()
-        .with(Position { x: 40, y: 25 })
+        .with(Position {
+            x: player_x,
+            y: player_y,
+        })
         .with(Renderable {
             glyph: '@',
             fg: WHITE,
