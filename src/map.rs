@@ -4,7 +4,7 @@ use std::cmp::{max, min};
 use std::sync::Mutex;
 use tcod::colors::*;
 use tcod::console::*;
-use tcod::map::{Map as FovMap};
+use tcod::map::Map as FovMap;
 
 use super::{Rect, Tcod};
 
@@ -19,7 +19,7 @@ pub struct Map {
     pub width: i32,
     pub height: i32,
     pub fov_map_mutex: Mutex<FovMap>, // The fov map for ALL entities. To use, recompute fov for the entity in question
-    pub revealed_tiles: Vec<bool>,  // Revealed tiles for PLAYER. Used to render map to console
+    pub revealed_tiles: Vec<bool>,    // Revealed tiles for PLAYER. Used to render map to console
     pub visible_tiles: Vec<bool>, // Currently visible tiles for PLAYER. Non visible but explored are greyed out
 }
 
@@ -56,19 +56,19 @@ impl Map {
     }
 
     // If the map is changed, this function must be called
-    fn recompute_fov (&mut self) {
+    fn recompute_fov(&mut self) {
         let mut fov_map = self.fov_map_mutex.lock().unwrap();
 
-            for x in 0..60 {
-                for y in 0..40 {
-                    let idx = self.xy_idx(x, y);
-                    let tile = &self.tiles[idx];
-                    match tile {
-                        TileType::Wall => fov_map.set(x, y, false, false),
-                        TileType::Floor => fov_map.set(x, y, true, true),
-                    }
+        for x in 0..60 {
+            for y in 0..40 {
+                let idx = self.xy_idx(x, y);
+                let tile = &self.tiles[idx];
+                match tile {
+                    TileType::Wall => fov_map.set(x, y, false, false),
+                    TileType::Floor => fov_map.set(x, y, true, true),
                 }
             }
+        }
     }
 
     pub fn new_map_rooms_and_corridors() -> Map {

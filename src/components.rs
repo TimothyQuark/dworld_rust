@@ -25,3 +25,11 @@ pub struct Viewshed {
     pub range: i32,
     pub dirty: bool,
 }
+
+#[derive(Debug, Component)]
+pub struct Monster {}
+
+#[derive(Debug, Component)]
+pub struct Name {
+    pub name : String,
+}

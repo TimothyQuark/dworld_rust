@@ -1,3 +1,4 @@
+use rand::Rng;
 use specs::prelude::*;
 use tcod::colors::*;
 use tcod::console::*;
@@ -17,6 +18,10 @@ pub use rect::Rect;
 mod visibility_system;
 pub use visibility_system::VisibilitySystem;
 
+mod monster_ai_system;
+pub use monster_ai_system::MonsterAI;
+use bracket_geometry::prelude::Point;
+
 pub const SCREEN_WIDTH: usize = 60;
 pub const SCREEN_HEIGHT: usize = 40;
 
@@ -30,25 +35,44 @@ pub struct Tcod {
 pub struct State {
     ecs: World,
     tcod: Tcod,
+    pub runstate: RunState,
+}
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum RunState {
+    Paused,
+    Running,
+    ExitGame,
 }
 
 impl State {
     fn tick(&mut self) -> bool {
         self.tcod.root.clear(); // Clear the screen every tick
 
-        let exit = player_input(self);
-
-        self.run_systems();
+        let mut exit: bool = false;
+        if self.runstate == RunState::Running {
+            self.run_systems();
+            self.runstate = RunState::Paused;
+        } else {
+            self.runstate = player_input(self);
+            if self.runstate == RunState::ExitGame {
+                exit = true
+            };
+        }
 
         draw_map(&self.ecs, &mut self.tcod);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
+        let map = self.ecs.fetch::<Map>();
 
         for (pos, render) in (&positions, &renderables).join() {
-            self.tcod
-                .root
-                .put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
+            let idx = map.xy_idx(pos.x, pos.y);
+            if map.visible_tiles[idx] {
+                self.tcod
+                    .root
+                    .put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
+            }
         }
         self.tcod.root.flush();
 
@@ -58,6 +82,8 @@ impl State {
     fn run_systems(&mut self) {
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
+        let mut mob = MonsterAI {};
+        mob.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -81,17 +107,19 @@ fn main() {
     let mut gs = State {
         ecs: World::new(),
         tcod: tcod_temp,
+        runstate: RunState::Running,
     };
 
     let map: Map = Map::new_map_rooms_and_corridors();
 
     let (player_x, player_y) = map.rooms[0].center();
-    gs.ecs.insert(map);
 
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
+    gs.ecs.register::<Monster>();
+    gs.ecs.register::<Name>();
 
     // Create player
     gs.ecs
@@ -111,7 +139,41 @@ fn main() {
             range: 8,
             dirty: true, // Force initial recompute
         })
+        .with(Name { name: "Player".to_string()})
         .build();
+
+    let mut rng = rand::thread_rng();
+    for (i,room) in map.rooms.iter().skip(1).enumerate() {
+        let (x, y) = room.center();
+
+        let glyph: char;
+        let name: String;        
+        let roll = rng.gen_range(1, 3); // Rolls 1 or 2
+        match roll {
+            1 => {glyph = 'g'; name = "Goblin".to_string()},
+            _ => {glyph = 'o'; name = "Orc".to_string()},
+        }
+
+        gs.ecs
+            .create_entity()
+            .with(Position { x, y })
+            .with(Renderable {
+                glyph: glyph,
+                fg: RED,
+                bg: BLACK,
+            })
+            .with(Viewshed {
+                visible_tiles: Vec::new(),
+                range: 8,
+                dirty: true,
+            })
+            .with(Monster {})
+            .with(Name { name : format!("{} #{}", &name, i)})
+            .build();
+    }
+
+    gs.ecs.insert(map);
+    gs.ecs.insert(Point::new(player_x, player_y));
 
     while !gs.tcod.root.window_closed() {
         let exit = gs.tick();
