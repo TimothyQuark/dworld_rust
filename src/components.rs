@@ -31,5 +31,8 @@ pub struct Monster {}
 
 #[derive(Debug, Component)]
 pub struct Name {
-    pub name : String,
+    pub name: String,
 }
+
+#[derive(Debug, Component)]
+pub struct BlockTile {}

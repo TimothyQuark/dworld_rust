@@ -1,3 +1,4 @@
+use bracket_geometry::prelude::Point;
 use rand::Rng;
 use specs::prelude::*;
 use tcod::colors::*;
@@ -20,7 +21,9 @@ pub use visibility_system::VisibilitySystem;
 
 mod monster_ai_system;
 pub use monster_ai_system::MonsterAI;
-use bracket_geometry::prelude::Point;
+
+mod map_indexing_system;
+pub use map_indexing_system::MapIndexingSystem;
 
 pub const SCREEN_WIDTH: usize = 60;
 pub const SCREEN_HEIGHT: usize = 40;
@@ -84,6 +87,8 @@ impl State {
         vis.run_now(&self.ecs);
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
+        let mut mapindex = MapIndexingSystem {};
+        mapindex.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -120,6 +125,7 @@ fn main() {
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
     gs.ecs.register::<Name>();
+    gs.ecs.register::<BlockTile>();
 
     // Create player
     gs.ecs
@@ -139,19 +145,27 @@ fn main() {
             range: 8,
             dirty: true, // Force initial recompute
         })
-        .with(Name { name: "Player".to_string()})
+        .with(Name {
+            name: "Player".to_string(),
+        })
         .build();
 
     let mut rng = rand::thread_rng();
-    for (i,room) in map.rooms.iter().skip(1).enumerate() {
+    for (i, room) in map.rooms.iter().skip(1).enumerate() {
         let (x, y) = room.center();
 
         let glyph: char;
-        let name: String;        
+        let name: String;
         let roll = rng.gen_range(1, 3); // Rolls 1 or 2
         match roll {
-            1 => {glyph = 'g'; name = "Goblin".to_string()},
-            _ => {glyph = 'o'; name = "Orc".to_string()},
+            1 => {
+                glyph = 'g';
+                name = "Goblin".to_string()
+            }
+            _ => {
+                glyph = 'o';
+                name = "Orc".to_string()
+            }
         }
 
         gs.ecs
@@ -168,7 +182,10 @@ fn main() {
                 dirty: true,
             })
             .with(Monster {})
-            .with(Name { name : format!("{} #{}", &name, i)})
+            .with(Name {
+                name: format!("{} #{}", &name, i),
+            })
+            .with(BlockTile {})
             .build();
     }
 

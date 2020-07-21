@@ -82,7 +82,7 @@ pub fn player_input(gs: &mut State) -> RunState {
             ..
         } => try_move_player(0, 1, &mut gs.ecs),
 
-        _ => {return RunState::Paused}
+        _ => return RunState::Paused,
     }
 
     RunState::Running

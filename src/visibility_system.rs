@@ -12,7 +12,7 @@ impl<'a> System<'a> for VisibilitySystem {
         WriteExpect<'a, Map>,
         Entities<'a>,
         WriteStorage<'a, Viewshed>,
-        WriteStorage<'a, Position>,
+        ReadStorage<'a, Position>,
         ReadStorage<'a, Player>,
     );
 
@@ -20,7 +20,7 @@ impl<'a> System<'a> for VisibilitySystem {
         let (mut map, entities, mut viewshed, pos, player) = data;
 
         for (ent, viewshed, pos) in (&entities, &mut viewshed, &pos).join() {
-            if viewshed.dirty {
+            if viewshed.dirty || map.dirty {
                 viewshed.dirty = false;
                 viewshed.visible_tiles.clear();
 
@@ -42,7 +42,7 @@ impl<'a> System<'a> for VisibilitySystem {
                         .visible_tiles
                         .retain(|p| p.x >= 0 && p.x < map.width && p.y >= 0 && p.y < map.height);
                 }
-                // If this is the player, reveal what the can see
+                // If this is the player, reveal what they can see
                 let _p: Option<&Player> = player.get(ent);
                 if let Some(_p) = _p {
                     for t in map.visible_tiles.iter_mut() {
