@@ -36,3 +36,13 @@ pub struct Name {
 
 #[derive(Debug, Component)]
 pub struct BlockTile {}
+
+#[derive(Component, Debug)]
+pub struct CombatStats {
+    pub max_hp: i32,
+    pub curr_hp: i32,
+    pub armor: i32,
+    pub magic_res: i32,
+    pub max_mana: i32,
+    pub curr_mana: i32,
+}

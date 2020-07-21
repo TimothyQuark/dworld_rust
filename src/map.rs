@@ -20,6 +20,7 @@ pub struct Map {
     pub rooms: Vec<Rect>,
     pub width: i32,
     pub height: i32,
+    pub tile_content: Vec<Vec<Entity>>,
     pub fov_map_mutex: Mutex<FovMap>, // The fov map for ALL entities. To use, recompute fov for the entity in question
     pub revealed_tiles: Vec<bool>,    // Revealed tiles for PLAYER. Used to render map to console
     pub visible_tiles: Vec<bool>, // Currently visible tiles for PLAYER. Non visible but explored are greyed out
@@ -84,6 +85,12 @@ impl<'a> Map {
         }
     }
 
+    pub fn clear_content_index(&mut self) {
+        for content in self.tile_content.iter_mut() {
+            content.clear();
+        }
+    }
+
     pub fn new_map_rooms_and_corridors() -> Map {
         let mut map = Map {
             dirty: true,
@@ -91,6 +98,7 @@ impl<'a> Map {
             rooms: Vec::new(),
             width: 60,
             height: 40,
+            tile_content: vec![Vec::new(); 60 * 40],
             fov_map_mutex: Mutex::new(FovMap::new(60, 40)),
             revealed_tiles: vec![false; 60 * 40],
             visible_tiles: vec![false; 60 * 40],

@@ -53,14 +53,20 @@ impl State {
         self.tcod.root.clear(); // Clear the screen every tick
 
         let mut exit: bool = false;
-        if self.runstate == RunState::Running {
-            self.run_systems();
-            self.runstate = RunState::Paused;
-        } else {
-            self.runstate = player_input(self);
-            if self.runstate == RunState::ExitGame {
-                exit = true
-            };
+        match self.runstate {
+            RunState::Running => {
+                self.run_systems();
+                self.runstate = RunState::Paused;
+            }
+            RunState::Paused => {
+                self.runstate = player_input(self);
+                if self.runstate == RunState::ExitGame {
+                    exit = true
+                };
+            }
+            RunState::ExitGame => {
+                exit = true;
+            }
         }
 
         draw_map(&self.ecs, &mut self.tcod);
@@ -126,6 +132,7 @@ fn main() {
     gs.ecs.register::<Monster>();
     gs.ecs.register::<Name>();
     gs.ecs.register::<BlockTile>();
+    gs.ecs.register::<CombatStats>();
 
     // Create player
     gs.ecs
@@ -147,6 +154,14 @@ fn main() {
         })
         .with(Name {
             name: "Player".to_string(),
+        })
+        .with(CombatStats {
+            max_hp: 30,
+            curr_hp: 30,
+            armor: 2,
+            magic_res: 4,
+            max_mana: 50,
+            curr_mana: 50,
         })
         .build();
 
@@ -184,6 +199,14 @@ fn main() {
             .with(Monster {})
             .with(Name {
                 name: format!("{} #{}", &name, i),
+            })
+            .with(CombatStats {
+                max_hp: 5,
+                curr_hp: 5,
+                armor: 2,
+                magic_res: 4,
+                max_mana: 50,
+                curr_mana: 50,
             })
             .with(BlockTile {})
             .build();

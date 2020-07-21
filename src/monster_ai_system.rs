@@ -19,6 +19,7 @@ impl<'a> System<'a> for MonsterAI {
         for (mut viewshed, _monster, name, mut pos) in
             (&mut viewshed, &monster, &name, &mut position).join()
         {
+            viewshed.dirty = true;
             if viewshed.visible_tiles.contains(&*player_pos) {
                 let fov_map = map.fov_map_mutex.lock().unwrap().clone(); // This is probably very costly
                 let mut path = AStar::new_from_map(fov_map, 1.41);
@@ -27,7 +28,11 @@ impl<'a> System<'a> for MonsterAI {
                 // Note that path.len is calculated before the monster moves.
                 //println!("{} tiles from player (before moving)", path.len());
                 if path_found && path.len() > 0 {
-                    println!("{} sees and chases you!", name.name);
+                    println!(
+                        "{} sees and chases you! {} tiles from you",
+                        name.name,
+                        path.len()
+                    );
                     let (x, y) = path.walk_one_step(true).unwrap();
                     // New monster position
                     let new_idx = map.xy_idx(x, y);
@@ -38,19 +43,17 @@ impl<'a> System<'a> for MonsterAI {
                             .distance2d(Point::new(pos.x, pos.y), *player_pos);
                         if distance < 1.5 {
                             println!("{} shouts insults in your face!", name.name);
-                            return;
+                        } else {
+                            let old_idx = map.xy_idx(pos.x, pos.y); // Old monster position
+                            map.is_walkable[old_idx] = true; // Old position now open
+                            pos.x = x; // Monster moves
+                            pos.y = y;
+                            map.is_walkable[new_idx] = false; // New position is blocked
                         }
-
-                        let old_idx = map.xy_idx(pos.x, pos.y); // Old monster position
-                        map.is_walkable[old_idx] = true; // Old position now open
-                        pos.x = x; // Monster moves
-                        pos.y = y;
-                        map.is_walkable[new_idx] = false; // New position is blocked
                     } else {
-                        println!("Monster bumps into something while chasing player");
+                        println!("{} bumps into something while chasing player", name.name);
                     }
                 }
-                viewshed.dirty = true;
             }
         }
     }
