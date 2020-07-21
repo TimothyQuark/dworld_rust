@@ -18,7 +18,7 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 
     for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
-        if map.tiles[destination_idx] != TileType::Wall {
+        if map.is_walkable[destination_idx] {
             pos.x = min(SCREEN_WIDTH as i32 - 1, max(0, pos.x + delta_x));
             pos.y = min(SCREEN_HEIGHT as i32 - 1, max(0, pos.y + delta_y));
 
@@ -50,6 +50,56 @@ pub fn player_input(gs: &mut State) -> RunState {
         // }
         Key { code: Escape, .. } => return RunState::ExitGame, // Exit the game
 
+        // Diagonal commands. Evaluated first since using Shift-Left etc controls
+        Key {
+            code: Left,
+            shift: true,
+            ..
+        }
+        | Key { code: NumPad7, .. }
+        | Key {
+            code: Char,
+            printable: 'q',
+            ..
+        } => try_move_player(-1, -1, &mut gs.ecs),
+
+        Key {
+            code: Right,
+            shift: true,
+            ..
+        }
+        | Key { code: NumPad9, .. }
+        | Key {
+            code: Char,
+            printable: 'e',
+            ..
+        } => try_move_player(1, -1, &mut gs.ecs),
+
+        Key {
+            code: Left,
+            ctrl: true,
+            ..
+        }
+        | Key { code: NumPad1, .. }
+        | Key {
+            code: Char,
+            printable: 'z',
+            ..
+        } => try_move_player(-1, 1, &mut gs.ecs),
+
+        Key {
+            code: Right,
+            ctrl: true,
+            ..
+        }
+        | Key { code: NumPad3, .. }
+        | Key {
+            code: Char,
+            printable: 'c',
+            ..
+        } => try_move_player(1, 1, &mut gs.ecs),
+
+        // Basic directions
         Key { code: Left, .. }
         | Key { code: NumPad4, .. }
         | Key {
