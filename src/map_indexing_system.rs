@@ -17,6 +17,7 @@ impl<'a> System<'a> for MapIndexingSystem {
         map.dirty = false;
         // Recompute map, without considering entities
         map.recompute_map();
+        map.clear_content_index();
 
         // Check if an entity blocks a certain position, adds it to is_walkable
         for (entity, position) in (&entities, &position).join() {

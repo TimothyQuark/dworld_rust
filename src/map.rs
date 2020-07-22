@@ -5,7 +5,6 @@ use std::sync::Mutex;
 use tcod::colors::*;
 use tcod::console::*;
 use tcod::map::Map as FovMap;
-use tcod::pathfinding::AStar;
 
 use super::{Rect, Tcod};
 

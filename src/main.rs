@@ -25,6 +25,12 @@ pub use monster_ai_system::MonsterAI;
 mod map_indexing_system;
 pub use map_indexing_system::MapIndexingSystem;
 
+mod melee_combat_system;
+pub use melee_combat_system::MeleeCombatSystem;
+
+mod damage_system;
+pub use damage_system::DamageSystem;
+
 pub const SCREEN_WIDTH: usize = 60;
 pub const SCREEN_HEIGHT: usize = 40;
 
@@ -38,36 +44,55 @@ pub struct Tcod {
 pub struct State {
     ecs: World,
     tcod: Tcod,
-    pub runstate: RunState,
 }
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
-    Paused,
-    Running,
+    AwaitingInput,
+    PreRun,
+    PlayerTurn,
+    MonsterTurn,
     ExitGame,
 }
 
 impl State {
     fn tick(&mut self) -> bool {
         self.tcod.root.clear(); // Clear the screen every tick
-
         let mut exit: bool = false;
-        match self.runstate {
-            RunState::Running => {
+
+        let mut newrunstate;
+        {
+            let runstate = self.ecs.fetch::<RunState>();
+            newrunstate = *runstate;
+        }
+
+        match newrunstate {
+            RunState::PreRun => {
                 self.run_systems();
-                self.runstate = RunState::Paused;
+                newrunstate = RunState::AwaitingInput;
             }
-            RunState::Paused => {
-                self.runstate = player_input(self);
-                if self.runstate == RunState::ExitGame {
-                    exit = true
-                };
+            RunState::AwaitingInput => {
+                newrunstate = player_input(self);
+            }
+            RunState::PlayerTurn => {
+                self.run_systems();
+                newrunstate = RunState::MonsterTurn;
+            }
+            RunState::MonsterTurn => {
+                self.run_systems();
+                newrunstate = RunState::AwaitingInput;
             }
             RunState::ExitGame => {
                 exit = true;
             }
         }
+
+        {
+            let mut runwriter = self.ecs.write_resource::<RunState>();
+            *runwriter = newrunstate;
+        }
+
+        damage_system::delete_the_dead(&mut self.ecs);
 
         draw_map(&self.ecs, &mut self.tcod);
 
@@ -85,7 +110,7 @@ impl State {
         }
         self.tcod.root.flush();
 
-        return exit; // if command given to quit game, returns true
+        return exit; // if command given to quit game, returns true to main function
     }
 
     fn run_systems(&mut self) {
@@ -95,6 +120,10 @@ impl State {
         mob.run_now(&self.ecs);
         let mut mapindex = MapIndexingSystem {};
         mapindex.run_now(&self.ecs);
+        let mut melee = MeleeCombatSystem {};
+        melee.run_now(&self.ecs);
+        let mut damage = DamageSystem {};
+        damage.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -118,7 +147,6 @@ fn main() {
     let mut gs = State {
         ecs: World::new(),
         tcod: tcod_temp,
-        runstate: RunState::Running,
     };
 
     let map: Map = Map::new_map_rooms_and_corridors();
@@ -133,9 +161,12 @@ fn main() {
     gs.ecs.register::<Name>();
     gs.ecs.register::<BlockTile>();
     gs.ecs.register::<CombatStats>();
+    gs.ecs.register::<WantsToMelee>();
+    gs.ecs.register::<SufferDamage>();
 
     // Create player
-    gs.ecs
+    let player_entity = gs
+        .ecs
         .create_entity()
         .with(Position {
             x: player_x,
@@ -162,6 +193,7 @@ fn main() {
             magic_res: 4,
             max_mana: 50,
             curr_mana: 50,
+            power: 4,
         })
         .build();
 
@@ -207,13 +239,16 @@ fn main() {
                 magic_res: 4,
                 max_mana: 50,
                 curr_mana: 50,
+                power: 3,
             })
             .with(BlockTile {})
             .build();
     }
 
     gs.ecs.insert(map);
+    gs.ecs.insert(player_entity);
     gs.ecs.insert(Point::new(player_x, player_y));
+    gs.ecs.insert(RunState::PreRun);
 
     while !gs.tcod.root.window_closed() {
         let exit = gs.tick();

@@ -4,7 +4,8 @@ use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
 use super::RunState;
-use super::{Map, Player, Position, State, TileType, Viewshed};
+use super::{Map, Player, Position, State, Viewshed};
+use crate::{CombatStats, WantsToMelee};
 use bracket_geometry::prelude::Point;
 
 pub const SCREEN_WIDTH: usize = 60;
@@ -14,10 +15,39 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
     let mut viewsheds = ecs.write_storage::<Viewshed>();
+    let entites = ecs.entities();
+    let combat_stats = ecs.read_storage::<CombatStats>();
     let map = ecs.fetch::<Map>();
+    let mut wants_to_melee = ecs.write_storage::<WantsToMelee>();
 
-    for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
+    for (entity, _player, pos, viewshed) in
+        (&entites, &mut players, &mut positions, &mut viewsheds).join()
+    {
+        if pos.x + delta_x < 1
+            || pos.x + delta_x > map.width - 1
+            || pos.y + delta_y < 1
+            || pos.y + delta_y > map.height - 1
+        {
+            return;
+        }
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
+
+        for potential_target in map.tile_content[destination_idx].iter() {
+            let target = combat_stats.get(*potential_target);
+
+            if let Some(_target) = target {
+                wants_to_melee
+                    .insert(
+                        entity,
+                        WantsToMelee {
+                            target: *potential_target,
+                        },
+                    )
+                    .expect("Add target failed");
+                return; // Prevents entity from moving after attacking
+            }
+        }
+
         if map.is_walkable[destination_idx] {
             pos.x = min(SCREEN_WIDTH as i32 - 1, max(0, pos.x + delta_x));
             pos.y = min(SCREEN_HEIGHT as i32 - 1, max(0, pos.y + delta_y));
@@ -132,8 +162,8 @@ pub fn player_input(gs: &mut State) -> RunState {
             ..
         } => try_move_player(0, 1, &mut gs.ecs),
 
-        _ => return RunState::Paused,
+        _ => return RunState::AwaitingInput,
     }
 
-    RunState::Running
+    RunState::PlayerTurn
 }
