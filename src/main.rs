@@ -32,12 +32,14 @@ pub use melee_combat_system::MeleeCombatSystem;
 mod damage_system;
 pub use damage_system::DamageSystem;
 
-pub const SCREEN_WIDTH: usize = 60;
-pub const SCREEN_HEIGHT: usize = 40;
+mod gui;
+
+mod gamelog;
+pub use gamelog::GameLog;
 
 const LIMIT_FPS: i32 = 144;
 
-pub struct Tcod {
+pub struct TcodStruct {
     root: Root,
     key: Key,
     mouse: Mouse, //con: Offscreen,
@@ -45,7 +47,7 @@ pub struct Tcod {
 
 pub struct State {
     ecs: World,
-    tcod: Tcod,
+    tcod: TcodStruct,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -110,6 +112,9 @@ impl State {
                     .put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
             }
         }
+
+        gui::draw_ui(&self.ecs, &mut self.tcod);
+
         self.tcod.root.flush();
 
         return exit; // if command given to quit game, returns true to main function
@@ -137,13 +142,13 @@ fn main() {
     let root = Root::initializer()
         .font("cp437_20x20.png", FontLayout::AsciiInRow)
         .font_type(FontType::Greyscale)
-        .size(SCREEN_WIDTH as i32, SCREEN_HEIGHT as i32)
+        .size(80 as i32, 50 as i32)
         .title("DWorld")
         .init();
 
     //let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    let mut tcod_temp = Tcod {
+    let mut tcod_temp = TcodStruct {
         root,
         key: Default::default(),
         mouse: Default::default(),
@@ -251,10 +256,15 @@ fn main() {
             .build();
     }
 
+    // Resources, used by various systems and functions
+        
+    gs.ecs.insert(RunState::PreRun);
     gs.ecs.insert(map);
     gs.ecs.insert(player_entity);
     gs.ecs.insert(Point::new(player_x, player_y));
-    gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(GameLog {
+        entries : vec!["Welcome to DWorld!".to_string()]
+    });
 
     while !gs.tcod.root.window_closed() {
         let exit = gs.tick();

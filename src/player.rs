@@ -2,13 +2,12 @@ use specs::prelude::*;
 use std::cmp::{max, min};
 use tcod::input::{self, Event, Key, KeyCode::*};
 
+use super::map::{MAPCOUNT, MAPHEIGHT, MAPWIDTH};
+
 use super::RunState;
 use super::{Map, Player, Position, State, Viewshed};
 use crate::{CombatStats, WantsToMelee};
 use bracket_geometry::prelude::Point;
-
-pub const SCREEN_WIDTH: usize = 60;
-pub const SCREEN_HEIGHT: usize = 40;
 
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -48,8 +47,8 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         }
 
         if map.is_walkable[destination_idx] {
-            pos.x = min(SCREEN_WIDTH as i32 - 1, max(0, pos.x + delta_x));
-            pos.y = min(SCREEN_HEIGHT as i32 - 1, max(0, pos.y + delta_y));
+            pos.x = min(MAPWIDTH as i32 - 1, max(0, pos.x + delta_x));
+            pos.y = min(MAPHEIGHT as i32 - 1, max(0, pos.y + delta_y));
 
             viewshed.dirty = true; // Player has moved, recompute fov
 
@@ -77,6 +76,7 @@ pub fn player_input(gs: &mut State) -> RunState {
         }
     }
 
+    // Old way to obtain user input. Blocks program until user hits key
     //let key = tcod.root.wait_for_keypress(true);
 
     match tcod.key {

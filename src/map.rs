@@ -6,7 +6,11 @@ use tcod::colors::*;
 use tcod::console::*;
 use tcod::map::Map as FovMap;
 
-use super::{Rect, Tcod};
+use super::{Rect, TcodStruct};
+
+pub const MAPWIDTH: usize = 80;
+pub const MAPHEIGHT: usize = 43;
+pub const MAPCOUNT: usize = MAPHEIGHT * MAPWIDTH;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -65,8 +69,8 @@ impl<'a> Map {
         let mut fov_map = self.fov_map_mutex.lock().unwrap();
 
         // Since we rewrite over all indexes, no need to clear is_walkable/is_transparent
-        for x in 0..60 {
-            for y in 0..40 {
+        for x in 0..MAPWIDTH as i32 {
+            for y in 0..MAPHEIGHT as i32 {
                 let idx = self.xy_idx(x, y);
                 match self.tiles[idx] {
                     TileType::Wall => {
@@ -93,16 +97,16 @@ impl<'a> Map {
     pub fn new_map_rooms_and_corridors() -> Map {
         let mut map = Map {
             dirty: true,
-            tiles: vec![TileType::Wall; 60 * 40],
+            tiles: vec![TileType::Wall; MAPWIDTH * MAPHEIGHT],
             rooms: Vec::new(),
-            width: 60,
-            height: 40,
-            tile_content: vec![Vec::new(); 60 * 40],
-            fov_map_mutex: Mutex::new(FovMap::new(60, 40)),
-            revealed_tiles: vec![false; 60 * 40],
-            visible_tiles: vec![false; 60 * 40],
-            is_walkable: vec![false; 60 * 40],
-            is_transparent: vec![false; 60 * 40],
+            width: MAPWIDTH as i32,
+            height: MAPHEIGHT as i32,
+            tile_content: vec![Vec::new(); MAPWIDTH * MAPHEIGHT],
+            fov_map_mutex: Mutex::new(FovMap::new(MAPWIDTH as i32, MAPHEIGHT as i32)),
+            revealed_tiles: vec![false; MAPWIDTH * MAPHEIGHT],
+            visible_tiles: vec![false; MAPWIDTH * MAPHEIGHT],
+            is_walkable: vec![false; MAPWIDTH * MAPHEIGHT],
+            is_transparent: vec![false; MAPWIDTH * MAPHEIGHT],
         };
 
         const MAX_ROOMS: i32 = 30;
@@ -115,8 +119,8 @@ impl<'a> Map {
             let w = rng.gen_range(MIN_SIZE, MAX_SIZE);
             let h = rng.gen_range(MIN_SIZE, MAX_SIZE);
 
-            let x: i32 = rng.gen_range(1, 60 - w - 1) - 1;
-            let y: i32 = rng.gen_range(1, 40 - h - 1) - 1;
+            let x: i32 = rng.gen_range(1, MAPWIDTH as i32 - w - 1) - 1;
+            let y: i32 = rng.gen_range(1, MAPHEIGHT as i32 - h - 1) - 1;
             let new_room = Rect::new(x, y, w, h);
             let mut ok = true;
             for other_room in map.rooms.iter() {
@@ -152,7 +156,7 @@ impl<'a> Map {
     }
 }
 
-pub fn draw_map(ecs: &World, tcod: &mut Tcod) {
+pub fn draw_map(ecs: &World, tcod: &mut TcodStruct) {
     let map = ecs.fetch::<Map>();
 
     let mut y = 0;
@@ -182,7 +186,7 @@ pub fn draw_map(ecs: &World, tcod: &mut Tcod) {
         }
 
         x += 1;
-        if x > 59 {
+        if x > MAPWIDTH as i32 - 1 {
             x = 0;
             y += 1;
         }
