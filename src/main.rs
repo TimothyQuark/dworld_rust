@@ -3,6 +3,7 @@ use rand::Rng;
 use specs::prelude::*;
 use tcod::colors::*;
 use tcod::console::*;
+use tcod::input::{self, Event, Key, Mouse};
 
 mod components;
 pub use components::*;
@@ -38,7 +39,8 @@ const LIMIT_FPS: i32 = 144;
 
 pub struct Tcod {
     root: Root,
-    //con: Offscreen,
+    key: Key,
+    mouse: Mouse, //con: Offscreen,
 }
 
 pub struct State {
@@ -141,7 +143,11 @@ fn main() {
 
     //let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    let mut tcod_temp = Tcod { root };
+    let mut tcod_temp = Tcod {
+        root,
+        key: Default::default(),
+        mouse: Default::default(),
+    };
     tcod_temp.root.set_default_foreground(WHITE);
 
     let mut gs = State {

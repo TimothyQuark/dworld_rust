@@ -1,7 +1,6 @@
 use specs::prelude::*;
 use std::cmp::{max, min};
-use tcod::input::Key;
-use tcod::input::KeyCode::*;
+use tcod::input::{self, Event, Key, KeyCode::*};
 
 use super::RunState;
 use super::{Map, Player, Position, State, Viewshed};
@@ -62,22 +61,26 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     }
 }
 
+/// Take player input from mouse and keyboard, and store in tcod struct.
+/// Note that the game uses nonblocking user input, i.e. if no valid user
+/// input sampled, this function simply returns PlayerTurn state
 pub fn player_input(gs: &mut State) -> RunState {
     let tcod = &mut gs.tcod;
+    //println!("Waiting for player input");
 
-    let key = tcod.root.wait_for_keypress(true);
+    match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
+        Some((_, Event::Mouse(m))) => tcod.mouse = m,
+        Some((_, Event::Key(k))) => tcod.key = k,
+        _ => {
+            tcod.key = Default::default();
+            tcod.mouse = Default::default();
+        }
+    }
 
-    match key {
+    //let key = tcod.root.wait_for_keypress(true);
+
+    match tcod.key {
         // Don't use fullscreen mode because it messes up resolution in Linux
-        // Key {
-        //     code: Enter,
-        //     alt: true,
-        //     .. // Ignore all other fields of struct
-        // } => {
-        //     // Toggle to fullscreen, Alt + Enter
-        //     let fullscreen = tcod.root.is_fullscreen();
-        //     tcod.root.set_fullscreen(!fullscreen);
-        // }
         Key { code: Escape, .. } => return RunState::ExitGame, // Exit the game
 
         // Diagonal commands. Evaluated first since using Shift-Left etc controls
