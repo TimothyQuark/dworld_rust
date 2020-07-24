@@ -30,6 +30,17 @@ jobs:
           file: target/release/dworld_rust
           asset_name: dworld_rust-linux
           tag: ${{ github.ref }}
+          overwrite: true
+          body: "Linux release of DWorld"
+      - name: Upload the sprite sheet
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: arial10x10.png
+          asset_name: arial10x10.png
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Sprite sheet used by the game"
 
   publish_windows:
     name: Publish for Windows
@@ -49,6 +60,8 @@ jobs:
           file: target/release/dworld_rust.exe
           asset_name: dworld_rust-windows
           tag: ${{ github.ref }}
+          overwrite: true
+          body: "Windows release of DWorld"
 
   publish_macos:
     name: Publish for MacOS
@@ -70,4 +83,6 @@ jobs:
           file: target/release/dworld_rust
           asset_name: dworld_rust-macos
           tag: ${{ github.ref }}
+          overwrite: true
+          body: "MacOS release of DWorld"
 
