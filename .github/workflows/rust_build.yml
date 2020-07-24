@@ -1,4 +1,4 @@
-name: Rust
+name: Rust_release_build
 
 on:
   push:
@@ -30,31 +30,44 @@ jobs:
           file: target/release/dworld_rust
           asset_name: dworld_rust-linux
           tag: ${{ github.ref }}
-  publish:
-    name: Publish for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            artifact_name: dworld_rust.exe
-            asset_name: dworld_rust-windows
-          - os: macos-latest
-            artifact_name: dworld
-            asset_name: dworld_rust-macos
 
+  publish_windows:
+    name: Publish for Windows
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build debug
-      run: cargo build --verbose
-    - name: Test
-      run: cargo test --verbose
-    - name: Build release
-      run: cargo build --release
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/release/${{ matrix.artifact_name }}
-        asset_name: ${{ matrix.asset_name }}
-        tag: ${{ github.ref }}
+      - uses: actions/checkout@v2
+      - name: Build debug
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
+      - name: Build release
+        run: cargo build --release
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/dworld_rust
+          asset_name: dworld_rust-windows
+          tag: ${{ github.ref }}
+
+  publish_macos:
+    name: Publish for MacOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Compile dependencies
+        run: brew install pkg-config sdl2
+      - name: Build debug
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
+      - name: Build release
+        run: cargo build --release
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/dworld_rust
+          asset_name: dworld_rust-linux
+          tag: ${{ github.ref }}
+
