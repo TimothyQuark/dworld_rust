@@ -1,0 +1,60 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish_linux:
+    name: Publish for Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Compile dependencies
+        run: sudo apt-get install gcc g++ make libsdl2-dev
+      - name: Build debug
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
+      - name: Build release
+        run: cargo build --release
+      - name: Upload binaries to release
+        uses: TimothyQuark/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/dworld_rust
+          asset_name: dworld_rust-linux
+          tag: ${{ github.ref }}
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: dworld_rust.exe
+            asset_name: dworld_rust-windows
+          - os: macos-latest
+            artifact_name: dworld
+            asset_name: dworld_rust-macos
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build debug
+      run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose
+    - name: Build release
+      run: cargo build --release
+    - name: Upload binaries to release
+      uses: TimothyQuark/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
