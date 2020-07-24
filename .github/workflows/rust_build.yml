@@ -46,7 +46,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/dworld_rust
+          file: target/release/dworld_rust.exe
           asset_name: dworld_rust-windows
           tag: ${{ github.ref }}
 
@@ -68,6 +68,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/release/dworld_rust
-          asset_name: dworld_rust-linux
+          asset_name: dworld_rust-macos
           tag: ${{ github.ref }}
 
