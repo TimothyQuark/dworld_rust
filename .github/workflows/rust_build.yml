@@ -10,18 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  publish_spritesheet:
-    name: Publish spritesheet
-    runs-on: windows-latest
-    steps:
-      - uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: cp437_20x20.png"
-          asset_name: cp437_20x20.png"
-          tag: ${{ github.ref }}
-          overwrite: true
-          body: "Spritesheet used by Dworld"
+  
   publish_linux:
     name: Publish for Linux
     runs-on: ubuntu-latest
@@ -43,7 +32,9 @@ jobs:
           asset_name: dworld_rust-linux
           tag: ${{ github.ref }}
           overwrite: true
-          body: "Linux release of DWorld"
+          body: "DWorld releases for MacOS, Windows and Linux. 
+          Note that for the game to run, you must download the 
+          spritesheet from the source code and place it in the same folder as the executable"
 
   publish_windows:
     name: Publish for Windows
