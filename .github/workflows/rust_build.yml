@@ -17,8 +17,8 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: arial10x10.png
-          asset_name: arial10x10.png
+          file: cp437_20x20.png"
+          asset_name: cp437_20x20.png"
           tag: ${{ github.ref }}
           overwrite: true
           body: "Spritesheet used by Dworld"

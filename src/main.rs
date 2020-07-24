@@ -137,6 +137,7 @@ impl State {
 }
 
 fn main() {
+
     tcod::system::set_fps(LIMIT_FPS);
 
     let root = Root::initializer()
