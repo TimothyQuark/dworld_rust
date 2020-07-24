@@ -17,11 +17,11 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/dworld_rust
-          asset_name: dworld_rust-linux
+          file: arial10x10.png
+          asset_name: arial10x10.png
           tag: ${{ github.ref }}
           overwrite: true
-          body: "Linux release of DWorld"
+          body: "Spritesheet used by Dworld"
   publish_linux:
     name: Publish for Linux
     runs-on: ubuntu-latest
