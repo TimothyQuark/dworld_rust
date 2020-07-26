@@ -1,0 +1,68 @@
+name: Test and Publish
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test DWorld for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: dworld_rust
+            asset_name: dworld-linux
+          - os: windows-latest
+            artifact_name: dworld_rust.exe
+            asset_name: dworld_rust-windows.exe
+          - os: macos-latest
+            artifact_name: dworld_rust
+            asset_name: dworld-macos
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose
+
+  publish:
+    needs: test
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: dworld_rust
+            asset_name: dworld-linux
+          - os: windows-latest
+            artifact_name: dworld_rust.exe
+            asset_name: dworld_rust-windows.exe
+          - os: macos-latest
+            artifact_name: dworld_rust
+            asset_name: dworld-macos
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build release
+      run: cargo build --release
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: target/release/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: "DWorld releases for MacOS, Windows and Linux. 
+          Note that for the game to run, you must grab the 
+          spritesheet from the source code and place it in a resource folder next to
+          the executable"

@@ -1,25 +1,19 @@
+use super::{CombatStats, Map, Player, Position, RunState, State, Viewshed, WantsToMelee};
+use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use tcod::input::{self, Event, Key, KeyCode::*};
 
-use super::map::{MAPCOUNT, MAPHEIGHT, MAPWIDTH};
-
-use super::RunState;
-use super::{Map, Player, Position, State, Viewshed};
-use crate::{CombatStats, WantsToMelee};
-use bracket_geometry::prelude::Point;
-
-fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
+pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
-    let mut players = ecs.write_storage::<Player>();
+    let players = ecs.read_storage::<Player>();
     let mut viewsheds = ecs.write_storage::<Viewshed>();
-    let entites = ecs.entities();
+    let entities = ecs.entities();
     let combat_stats = ecs.read_storage::<CombatStats>();
     let map = ecs.fetch::<Map>();
     let mut wants_to_melee = ecs.write_storage::<WantsToMelee>();
 
     for (entity, _player, pos, viewshed) in
-        (&entites, &mut players, &mut positions, &mut viewsheds).join()
+        (&entities, &players, &mut positions, &mut viewsheds).join()
     {
         if pos.x + delta_x < 1
             || pos.x + delta_x > map.width - 1
@@ -32,7 +26,6 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 
         for potential_target in map.tile_content[destination_idx].iter() {
             let target = combat_stats.get(*potential_target);
-
             if let Some(_target) = target {
                 wants_to_melee
                     .insert(
@@ -42,17 +35,15 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
                         },
                     )
                     .expect("Add target failed");
-                return; // Prevents entity from moving after attacking
+                return;
             }
         }
 
-        if map.is_walkable[destination_idx] {
-            pos.x = min(MAPWIDTH as i32 - 1, max(0, pos.x + delta_x));
-            pos.y = min(MAPHEIGHT as i32 - 1, max(0, pos.y + delta_y));
+        if !map.blocked[destination_idx] {
+            pos.x = min(79, max(0, pos.x + delta_x));
+            pos.y = min(49, max(0, pos.y + delta_y));
 
-            viewshed.dirty = true; // Player has moved, recompute fov
-
-            // Update player position resource
+            viewshed.dirty = true;
             let mut ppos = ecs.write_resource::<Point>();
             ppos.x = pos.x;
             ppos.y = pos.y;
@@ -60,113 +51,51 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     }
 }
 
-/// Take player input from mouse and keyboard, and store in tcod struct.
-/// Note that the game uses nonblocking user input, i.e. if no valid user
-/// input sampled, this function simply returns PlayerTurn state
-pub fn player_input(gs: &mut State) -> RunState {
-    let tcod = &mut gs.tcod;
-    //println!("Waiting for player input");
+pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
+    // Player movement
 
-    match input::check_for_event(input::MOUSE | input::KEY_PRESS) {
-        Some((_, Event::Mouse(m))) => tcod.mouse = m,
-        Some((_, Event::Key(k))) => tcod.key = k,
-        _ => {
-            tcod.key = Default::default();
-            tcod.mouse = Default::default();
-        }
+    let input_global = &rltk::INPUT;
+    let input_mutex = input_global.lock();
+
+    let shift_down = input_mutex.is_key_pressed(VirtualKeyCode::LShift)
+        | input_mutex.is_key_pressed(VirtualKeyCode::RShift);
+    let control_down = input_mutex.is_key_pressed(VirtualKeyCode::LControl)
+        | input_mutex.is_key_pressed(VirtualKeyCode::RControl);
+
+    match ctx.key {
+        None => return RunState::AwaitingInput, // Nothing happened
+        Some(key) => match (key, shift_down, control_down) {
+
+            // Diagonals. Checked first because of control and shift modifiers
+            (VirtualKeyCode::Right, true, false) |(VirtualKeyCode::Numpad9, ..) | (VirtualKeyCode::U, ..) => try_move_player(1, -1, &mut gs.ecs),
+
+            (VirtualKeyCode::Left, true, false) |(VirtualKeyCode::Numpad7, ..) | (VirtualKeyCode::Y, ..) => try_move_player(-1, -1, &mut gs.ecs),
+
+            (VirtualKeyCode::Right, false, true) | (VirtualKeyCode::Numpad3, ..) | (VirtualKeyCode::N, ..) => try_move_player(1, 1, &mut gs.ecs),
+
+            (VirtualKeyCode::Left, false, true) |(VirtualKeyCode::Numpad1, ..) | (VirtualKeyCode::B, ..) => try_move_player(-1, 1, &mut gs.ecs),
+
+            // Cardinal directions
+            (VirtualKeyCode::Left, ..) | (VirtualKeyCode::Numpad4, ..) | (VirtualKeyCode::H, ..) => {
+                try_move_player(-1, 0, &mut gs.ecs)
+            }
+
+            (VirtualKeyCode::Right, ..) | (VirtualKeyCode::Numpad6, ..) | (VirtualKeyCode::L, ..) => {
+                try_move_player(1, 0, &mut gs.ecs)
+            }
+
+            (VirtualKeyCode::Up, ..) | (VirtualKeyCode::Numpad8,..) | (VirtualKeyCode::K, ..) => {
+                try_move_player(0, -1, &mut gs.ecs)
+            }
+
+            (VirtualKeyCode::Down, ..) | (VirtualKeyCode::Numpad2, ..) | (VirtualKeyCode::J, ..) => {
+                try_move_player(0, 1, &mut gs.ecs)
+            }
+
+            
+
+            _ => return RunState::AwaitingInput,
+        },
     }
-
-    // Old way to obtain user input. Blocks program until user hits key
-    //let key = tcod.root.wait_for_keypress(true);
-
-    match tcod.key {
-        // Don't use fullscreen mode because it messes up resolution in Linux
-        Key { code: Escape, .. } => return RunState::ExitGame, // Exit the game
-
-        // Diagonal commands. Evaluated first since using Shift-Left etc controls
-        Key {
-            code: Left,
-            shift: true,
-            ..
-        }
-        | Key { code: NumPad7, .. }
-        | Key {
-            code: Char,
-            printable: 'q',
-            ..
-        } => try_move_player(-1, -1, &mut gs.ecs),
-
-        Key {
-            code: Right,
-            shift: true,
-            ..
-        }
-        | Key { code: NumPad9, .. }
-        | Key {
-            code: Char,
-            printable: 'e',
-            ..
-        } => try_move_player(1, -1, &mut gs.ecs),
-
-        Key {
-            code: Left,
-            ctrl: true,
-            ..
-        }
-        | Key { code: NumPad1, .. }
-        | Key {
-            code: Char,
-            printable: 'z',
-            ..
-        } => try_move_player(-1, 1, &mut gs.ecs),
-
-        Key {
-            code: Right,
-            ctrl: true,
-            ..
-        }
-        | Key { code: NumPad3, .. }
-        | Key {
-            code: Char,
-            printable: 'c',
-            ..
-        } => try_move_player(1, 1, &mut gs.ecs),
-
-        // Basic directions
-        Key { code: Left, .. }
-        | Key { code: NumPad4, .. }
-        | Key {
-            code: Char,
-            printable: 'a',
-            ..
-        } => try_move_player(-1, 0, &mut gs.ecs),
-
-        Key { code: Right, .. }
-        | Key { code: NumPad6, .. }
-        | Key {
-            code: Char,
-            printable: 'd',
-            ..
-        } => try_move_player(1, 0, &mut gs.ecs),
-
-        Key { code: Up, .. }
-        | Key { code: NumPad8, .. }
-        | Key {
-            code: Char,
-            printable: 'w',
-            ..
-        } => try_move_player(0, -1, &mut gs.ecs),
-
-        Key { code: Down, .. }
-        | Key { code: NumPad2, .. }
-        | Key {
-            code: Char,
-            printable: 's',
-            ..
-        } => try_move_player(0, 1, &mut gs.ecs),
-
-        _ => return RunState::AwaitingInput,
-    }
-
     RunState::PlayerTurn
 }

@@ -1,9 +1,5 @@
-use bracket_geometry::prelude::Point;
-use rand::Rng;
+use rltk::{GameState, Point, Rltk, RGB};
 use specs::prelude::*;
-use tcod::colors::*;
-use tcod::console::*;
-use tcod::input::{self, Event, Key, Mouse};
 
 mod components;
 pub use components::*;
@@ -37,17 +33,8 @@ mod gui;
 mod gamelog;
 pub use gamelog::GameLog;
 
-const LIMIT_FPS: i32 = 144;
-
-pub struct TcodStruct {
-    root: Root,
-    key: Key,
-    mouse: Mouse, //con: Offscreen,
-}
-
 pub struct State {
     ecs: World,
-    tcod: TcodStruct,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -56,70 +43,9 @@ pub enum RunState {
     PreRun,
     PlayerTurn,
     MonsterTurn,
-    ExitGame,
 }
 
 impl State {
-    fn tick(&mut self) -> bool {
-        self.tcod.root.clear(); // Clear the screen every tick
-        let mut exit: bool = false;
-
-        let mut newrunstate;
-        {
-            let runstate = self.ecs.fetch::<RunState>();
-            newrunstate = *runstate;
-        }
-
-        match newrunstate {
-            RunState::PreRun => {
-                self.run_systems();
-                newrunstate = RunState::AwaitingInput;
-            }
-            RunState::AwaitingInput => {
-                newrunstate = player_input(self);
-            }
-            RunState::PlayerTurn => {
-                self.run_systems();
-                newrunstate = RunState::MonsterTurn;
-            }
-            RunState::MonsterTurn => {
-                self.run_systems();
-                newrunstate = RunState::AwaitingInput;
-            }
-            RunState::ExitGame => {
-                exit = true;
-            }
-        }
-
-        {
-            let mut runwriter = self.ecs.write_resource::<RunState>();
-            *runwriter = newrunstate;
-        }
-
-        damage_system::delete_the_dead(&mut self.ecs);
-
-        draw_map(&self.ecs, &mut self.tcod);
-
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<Map>();
-
-        for (pos, render) in (&positions, &renderables).join() {
-            let idx = map.xy_idx(pos.x, pos.y);
-            if map.visible_tiles[idx] {
-                self.tcod
-                    .root
-                    .put_char_ex(pos.x, pos.y, render.glyph, render.fg, render.bg);
-            }
-        }
-
-        gui::draw_ui(&self.ecs, &mut self.tcod);
-
-        self.tcod.root.flush();
-
-        return exit; // if command given to quit game, returns true to main function
-    }
-
     fn run_systems(&mut self) {
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
@@ -136,33 +62,71 @@ impl State {
     }
 }
 
-fn main() {
-    tcod::system::set_fps(LIMIT_FPS);
+impl GameState for State {
+    fn tick(&mut self, ctx: &mut Rltk) {
+        ctx.cls();
 
-    let root = Root::initializer()
-        .font("cp437_20x20.png", FontLayout::AsciiInRow)
-        .font_type(FontType::Greyscale)
-        .size(80 as i32, 50 as i32)
-        .title("DWorld")
-        .init();
+        let mut newrunstate;
+        {
+            let runstate = self.ecs.fetch::<RunState>();
+            newrunstate = *runstate;
+        }
 
-    //let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
+        match newrunstate {
+            RunState::PreRun => {
+                self.run_systems();
+                newrunstate = RunState::AwaitingInput;
+            }
+            RunState::AwaitingInput => {
+                newrunstate = player_input(self, ctx);
+            }
+            RunState::PlayerTurn => {
+                self.run_systems();
+                newrunstate = RunState::MonsterTurn;
+            }
+            RunState::MonsterTurn => {
+                self.run_systems();
+                newrunstate = RunState::AwaitingInput;
+            }
+        }
 
-    let mut tcod_temp = TcodStruct {
-        root,
-        key: Default::default(),
-        mouse: Default::default(),
-    };
-    tcod_temp.root.set_default_foreground(WHITE);
+        {
+            let mut runwriter = self.ecs.write_resource::<RunState>();
+            *runwriter = newrunstate;
+        }
 
-    let mut gs = State {
-        ecs: World::new(),
-        tcod: tcod_temp,
-    };
+        damage_system::delete_the_dead(&mut self.ecs);
 
-    let map: Map = Map::new_map_rooms_and_corridors();
+        draw_map(&self.ecs, ctx);
 
-    let (player_x, player_y) = map.rooms[0].center();
+        let positions = self.ecs.read_storage::<Position>();
+        let renderables = self.ecs.read_storage::<Renderable>();
+        let map = self.ecs.fetch::<Map>();
+
+        for (pos, render) in (&positions, &renderables).join() {
+            let idx = map.xy_idx(pos.x, pos.y);
+            if map.visible_tiles[idx] {
+                ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph)
+            }
+        }
+
+        gui::draw_ui(&self.ecs, ctx);
+    }
+}
+
+fn main() -> rltk::BError {
+    use rltk::RltkBuilder;
+
+    let context = RltkBuilder::new()
+        .with_simple_console(80, 50, "cp437_20x20.png")
+        .with_resource_path("resources")
+        .with_font("cp437_20x20.png", 20, 20)
+        .with_tile_dimensions(16, 16)
+        .with_dimensions(80, 50)
+        .with_title("DWorld")
+        .build()?;
+
+    let mut gs = State { ecs: World::new() };
 
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
@@ -170,10 +134,13 @@ fn main() {
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
     gs.ecs.register::<Name>();
-    gs.ecs.register::<BlockTile>();
+    gs.ecs.register::<BlocksTile>();
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
+
+    let map: Map = Map::new_map_rooms_and_corridors();
+    let (player_x, player_y) = map.rooms[0].center();
 
     // Create player
     let player_entity = gs
@@ -184,9 +151,9 @@ fn main() {
             y: player_y,
         })
         .with(Renderable {
-            glyph: '@',
-            fg: WHITE,
-            bg: BLACK,
+            glyph: rltk::to_cp437('@'),
+            fg: RGB::named(rltk::YELLOW),
+            bg: RGB::named(rltk::BLACK),
         })
         .with(Player {})
         .with(Viewshed {
@@ -200,7 +167,7 @@ fn main() {
         .with(CombatStats {
             max_hp: 30,
             curr_hp: 30,
-            armor: 2,
+            defense: 2,
             magic_res: 4,
             max_mana: 50,
             curr_mana: 50,
@@ -208,20 +175,20 @@ fn main() {
         })
         .build();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rltk::RandomNumberGenerator::new();
     for (i, room) in map.rooms.iter().skip(1).enumerate() {
         let (x, y) = room.center();
 
-        let glyph: char;
+        let glyph: rltk::FontCharType;
         let name: String;
-        let roll = rng.gen_range(1, 3); // Rolls 1 or 2
+        let roll = rng.roll_dice(1, 2); // Rolls 1 or 2
         match roll {
             1 => {
-                glyph = 'g';
+                glyph = rltk::to_cp437('g');
                 name = "Goblin".to_string()
             }
             _ => {
-                glyph = 'o';
+                glyph = rltk::to_cp437('o');
                 name = "Orc".to_string()
             }
         }
@@ -231,8 +198,8 @@ fn main() {
             .with(Position { x, y })
             .with(Renderable {
                 glyph: glyph,
-                fg: RED,
-                bg: BLACK,
+                fg: RGB::named(rltk::RED),
+                bg: RGB::named(rltk::BLACK),
             })
             .with(Viewshed {
                 visible_tiles: Vec::new(),
@@ -246,30 +213,25 @@ fn main() {
             .with(CombatStats {
                 max_hp: 5,
                 curr_hp: 5,
-                armor: 2,
+                defense: 2,
                 magic_res: 4,
                 max_mana: 50,
                 curr_mana: 50,
                 power: 3,
             })
-            .with(BlockTile {})
+            .with(BlocksTile {})
             .build();
     }
 
     // Resources, used by various systems and functions
-        
+
     gs.ecs.insert(RunState::PreRun);
     gs.ecs.insert(map);
     gs.ecs.insert(player_entity);
     gs.ecs.insert(Point::new(player_x, player_y));
     gs.ecs.insert(GameLog {
-        entries : vec!["Welcome to DWorld!".to_string()]
+        entries: vec!["Welcome to DWorld!".to_string()],
     });
 
-    while !gs.tcod.root.window_closed() {
-        let exit = gs.tick();
-        if exit {
-            break;
-        }
-    }
+    rltk::main_loop(context, gs)
 }

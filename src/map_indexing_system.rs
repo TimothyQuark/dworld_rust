@@ -1,4 +1,4 @@
-use super::{BlockTile, Map, Position};
+use super::{BlocksTile, Map, Position};
 use specs::prelude::*;
 
 pub struct MapIndexingSystem {}
@@ -7,30 +7,26 @@ impl<'a> System<'a> for MapIndexingSystem {
     type SystemData = (
         WriteExpect<'a, Map>,
         ReadStorage<'a, Position>,
-        ReadStorage<'a, BlockTile>,
+        ReadStorage<'a, BlocksTile>,
         Entities<'a>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (mut map, position, blockers, entities) = data;
-        // All changes to the map are corrected with this system. Hence no longer dirty
-        map.dirty = false;
-        // Recompute map, without considering entities
-        map.recompute_map();
-        map.clear_content_index();
 
-        // Check if an entity blocks a certain position, adds it to is_walkable
+        map.populate_blocked();
+        map.clear_content_index();
         for (entity, position) in (&entities, &position).join() {
             let idx = map.xy_idx(position.x, position.y);
-            // Blocks the position in is_walkable, but not the fov map!
-            // Done so that monsters will try to follow player, instead
-            // of finding very long alternate path. Happened often in narrow
-            // corridors
-            let _p: Option<&BlockTile> = blockers.get(entity);
+
+            // If they block, update the blocking list
+            let _p: Option<&BlocksTile> = blockers.get(entity);
             if let Some(_p) = _p {
-                map.is_walkable[idx] = false;
+                map.blocked[idx] = true;
             }
 
+            // Push the entity to the appropriate index slot. It's a Copy
+            // type, so we don't need to clone it (we want to avoid moving it out of the ECS!)
             map.tile_content[idx].push(entity);
         }
     }
