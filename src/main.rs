@@ -33,6 +33,8 @@ mod gui;
 mod gamelog;
 pub use gamelog::GameLog;
 
+mod spawner;
+
 pub struct State {
     ecs: World,
 }
@@ -138,89 +140,21 @@ fn main() -> rltk::BError {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
+    gs.ecs.register::<Item>();
+    gs.ecs.register::<Potion>();
+    gs.ecs.register::<InBackpack>();
+    gs.ecs.register::<WantsToPickupItem>();
 
     let map: Map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
 
     // Create player
-    let player_entity = gs
-        .ecs
-        .create_entity()
-        .with(Position {
-            x: player_x,
-            y: player_y,
-        })
-        .with(Renderable {
-            glyph: rltk::to_cp437('@'),
-            fg: RGB::named(rltk::YELLOW),
-            bg: RGB::named(rltk::BLACK),
-        })
-        .with(Player {})
-        .with(Viewshed {
-            visible_tiles: Vec::new(),
-            range: 8,
-            dirty: true, // Force initial recompute
-        })
-        .with(Name {
-            name: "Player".to_string(),
-        })
-        .with(CombatStats {
-            max_hp: 30,
-            curr_hp: 30,
-            defense: 2,
-            magic_res: 4,
-            max_mana: 50,
-            curr_mana: 50,
-            power: 4,
-        })
-        .build();
+    let player_entity = spawner::player(&mut gs.ecs, player_x, player_y);
 
-    let mut rng = rltk::RandomNumberGenerator::new();
-    for (i, room) in map.rooms.iter().skip(1).enumerate() {
-        let (x, y) = room.center();
-
-        let glyph: rltk::FontCharType;
-        let name: String;
-        let roll = rng.roll_dice(1, 2); // Rolls 1 or 2
-        match roll {
-            1 => {
-                glyph = rltk::to_cp437('g');
-                name = "Goblin".to_string()
-            }
-            _ => {
-                glyph = rltk::to_cp437('o');
-                name = "Orc".to_string()
-            }
-        }
-
-        gs.ecs
-            .create_entity()
-            .with(Position { x, y })
-            .with(Renderable {
-                glyph: glyph,
-                fg: RGB::named(rltk::RED),
-                bg: RGB::named(rltk::BLACK),
-            })
-            .with(Viewshed {
-                visible_tiles: Vec::new(),
-                range: 8,
-                dirty: true,
-            })
-            .with(Monster {})
-            .with(Name {
-                name: format!("{} #{}", &name, i),
-            })
-            .with(CombatStats {
-                max_hp: 5,
-                curr_hp: 5,
-                defense: 2,
-                magic_res: 4,
-                max_mana: 50,
-                curr_mana: 50,
-                power: 3,
-            })
-            .with(BlocksTile {})
-            .build();
+    // Add random generator resource early because we use it for generation
+    gs.ecs.insert(rltk::RandomNumberGenerator::new());
+    for room in map.rooms.iter().skip(1) {
+        spawner::spawn_room(&mut gs.ecs, room);
     }
 
     // Resources, used by various systems and functions
