@@ -45,7 +45,7 @@ jobs:
             asset_name: dworld-linux
           - os: windows-latest
             artifact_name: dworld_rust.exe
-            asset_name: dworld_rust-windows.exe
+            asset_name: dworld-windows.exe
           - os: macos-latest
             artifact_name: dworld_rust
             asset_name: dworld-macos
