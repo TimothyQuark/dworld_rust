@@ -12,3 +12,11 @@ specs = { version = "0.16.1", features = ["serde"] }
 specs-derive = "0.4.1"
 serde = {version = "^1.0.114", features = ["derive"] }
 serde_json = "^1.0.56"
+
+[profile.release]         # Modify profile settings via config.
+opt-level = 0            # Optimization level.
+debug = false             # Include debug info.
+debug-assertions = false  # Enables debug assertions.
+overflow-checks = true   # Enables runtime integer overflow checks.
+lto = false              # Sets link-time optimization.
+panic = 'unwind'         # The panic strategy.
