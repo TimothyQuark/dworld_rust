@@ -113,13 +113,15 @@ pub fn spawn_room(ecs: &mut World, room: &Rect) {
 
         for _i in 0..num_items {
             let mut added = false;
-            let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
-            let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
-            let idx = (y * MAPWIDTH) + x;
+            while !added {
+                let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
+                let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
+                let idx = (y * MAPWIDTH) + x;
 
-            if !item_spawn_points.contains(&idx) {
-                item_spawn_points.push(idx);
-                added = true;
+                if !item_spawn_points.contains(&idx) {
+                    item_spawn_points.push(idx);
+                    added = true;
+                }
             }
         }
     }
