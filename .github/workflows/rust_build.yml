@@ -1,4 +1,6 @@
-name: Test and Publish
+# See https://docs.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow
+
+name: Release
 
 on:
   push:
