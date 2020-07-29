@@ -108,6 +108,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Show Inventory
             (VirtualKeyCode::I, ..) => return RunState::ShowInventory,
 
+            // Drop item in inventory
+            (VirtualKeyCode::D, ..) => return RunState::ShowDropItem,
+
             _ => return RunState::AwaitingInput,
         },
     }
