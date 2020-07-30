@@ -13,7 +13,7 @@ pub struct Renderable {
     pub glyph: rltk::FontCharType,
     pub fg: RGB,
     pub bg: RGB,
-    pub render_order : i32
+    pub render_order: i32,
 }
 
 #[derive(Debug, Component)]
@@ -93,7 +93,7 @@ pub struct WantsToPickupItem {
 #[derive(Component, Debug)]
 pub struct WantsToUseItem {
     pub item: Entity,
-    pub target : Option<rltk::Point>
+    pub target: Option<rltk::Point>,
 }
 
 #[derive(Component, Debug, Clone)]
@@ -102,26 +102,23 @@ pub struct WantsToDropItem {
 }
 
 #[derive(Debug, Component)]
-pub struct Consumable {
-
-}
+pub struct Consumable {}
 
 #[derive(Debug, Component)]
 pub struct Ranged {
-    pub range : i32
+    pub range: i32,
 }
 #[derive(Debug, Component)]
 pub struct InflictsDamage {
-    pub damage : i32
+    pub damage: i32,
 }
 
 #[derive(Debug, Component)]
 pub struct AreaOfEffect {
-    pub radius : i32
+    pub radius: i32,
 }
-
 
 #[derive(Debug, Component)]
 pub struct Confusion {
-    pub turns : i32
+    pub turns: i32,
 }
