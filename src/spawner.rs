@@ -138,7 +138,7 @@ pub fn spawn_room(ecs: &mut World, room : &Rect, map_depth : i32) {
             "Fireball Scroll" => fireball_scroll(ecs, x, y),
             "Confusion Scroll" => confusion_scroll(ecs, x, y),
             "Magic Missile Scroll" => magic_missile_scroll(ecs, x, y),
-            _ => {print!(" Trying to instantiate an entity which does not exist")}
+            _ => {println!(" Trying to instantiate an entity which does not exist: {}", spawn.1)}
         }
     }
 }
