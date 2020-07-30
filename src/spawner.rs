@@ -1,15 +1,18 @@
 use super::{
     AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InflictsDamage, Item, Monster,
-    Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, Viewshed, MAPWIDTH,
+    Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, SerializeMe, Viewshed,
+    MAPWIDTH,
 };
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
+use specs::saveload::{MarkedBuilder, SimpleMarker};
 
 const MAX_MONSTERS: i32 = 4; // Max monsters that spawn in a room
 const MAX_ITEMS: i32 = 5; // Max items that spawn in a room. Made really common to help debug
 
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position {
             x: player_x,
             y: player_y,
@@ -62,6 +65,7 @@ fn goblin(ecs: &mut World, x: i32, y: i32) {
 
 fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharType, name: S) {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: glyph,
@@ -157,6 +161,7 @@ fn random_item(ecs: &mut World, x: i32, y: i32) {
 
 fn health_potion(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437('!'),
@@ -175,6 +180,7 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) {
 
 fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
@@ -194,6 +200,7 @@ fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
 
 fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
@@ -214,6 +221,7 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
 
 fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
+        .marked::<SimpleMarker<SerializeMe>>()
         .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),

@@ -111,6 +111,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Drop item in inventory
             (VirtualKeyCode::D, ..) => return RunState::ShowDropItem,
 
+            // Save Game
+            (VirtualKeyCode::Escape, ..) => return RunState::SaveGame,
+
             _ => return RunState::AwaitingInput,
         },
     }
