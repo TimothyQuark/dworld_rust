@@ -114,6 +114,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Save Game
             (VirtualKeyCode::Escape, ..) => return RunState::SaveGame,
 
+            // Go Down stairs
+            (VirtualKeyCode::Period, ..) => return RunState::NextLevel,
+
             _ => return RunState::AwaitingInput,
         },
     }
