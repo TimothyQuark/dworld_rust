@@ -122,6 +122,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
                 return skip_turn(&mut gs.ecs)
             }
 
+            // Remove an equipped item
+            (VirtualKeyCode::R, ..) => return RunState::ShowRemoveItem,
+
             _ => return RunState::AwaitingInput,
         },
     }
