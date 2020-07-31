@@ -1,6 +1,6 @@
-use super::{Monster,
-    CombatStats, GameLog, Item, Map, Player, Position, RunState, State, Viewshed, WantsToMelee,
-    WantsToPickupItem,
+use super::{
+    CombatStats, GameLog, Item, Map, Monster, Player, Position, RunState, State, Viewshed,
+    WantsToMelee, WantsToPickupItem,
 };
 use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
@@ -118,8 +118,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             (VirtualKeyCode::Period, ..) => return RunState::NextLevel,
 
             // Wait a turn
-            (VirtualKeyCode::Space, ..)
-            | (VirtualKeyCode::Comma, ..)=> return skip_turn(&mut gs.ecs),
+            (VirtualKeyCode::Space, ..) | (VirtualKeyCode::Comma, ..) => {
+                return skip_turn(&mut gs.ecs)
+            }
 
             _ => return RunState::AwaitingInput,
         },
@@ -161,7 +162,7 @@ fn get_item(ecs: &mut World) {
     }
 }
 
-fn skip_turn (ecs: &mut World) -> RunState {
+fn skip_turn(ecs: &mut World) -> RunState {
     let player_entity = ecs.fetch::<Entity>();
     let viewshed_components = ecs.read_storage::<Viewshed>();
     let monsters = ecs.read_storage::<Monster>();
@@ -176,7 +177,9 @@ fn skip_turn (ecs: &mut World) -> RunState {
             let mob = monsters.get(*entity_id);
             match mob {
                 None => {}
-                Some(_) => { can_heal = false; }
+                Some(_) => {
+                    can_heal = false;
+                }
             }
         }
     }

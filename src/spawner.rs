@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use super::random_table::RandomTable;
 use super::{
     AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InflictsDamage, Item, Monster,
     Name, Player, Position, ProvidesHealing, Ranged, Rect, Renderable, SerializeMe, Viewshed,
@@ -8,8 +9,6 @@ use super::{
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
 use specs::saveload::{MarkedBuilder, SimpleMarker};
-use super::random_table::RandomTable;
-
 
 const MAX_MONSTERS: i32 = 4; // Max monsters that spawn in a room
 const MAX_ITEMS: i32 = 5; // Max items that spawn in a room. Made really common to help debug
@@ -100,16 +99,16 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
 }
 
 #[allow(clippy::map_entry)]
-pub fn spawn_room(ecs: &mut World, room : &Rect, map_depth : i32) {
+pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
     let spawn_table = room_table(map_depth);
-    let mut spawn_points : HashMap<usize, String> = HashMap::new();
+    let mut spawn_points: HashMap<usize, String> = HashMap::new();
 
     // Scope to keep the borrow checker happy
     {
         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
         let num_spawns = rng.roll_dice(1, MAX_MONSTERS + 3) + (map_depth - 1) - 3;
 
-        for _i in 0 .. num_spawns {
+        for _i in 0..num_spawns {
             let mut added = false;
             let mut tries = 0;
             while !added && tries < 20 {
@@ -138,7 +137,10 @@ pub fn spawn_room(ecs: &mut World, room : &Rect, map_depth : i32) {
             "Fireball Scroll" => fireball_scroll(ecs, x, y),
             "Confusion Scroll" => confusion_scroll(ecs, x, y),
             "Magic Missile Scroll" => magic_missile_scroll(ecs, x, y),
-            _ => {println!(" Trying to instantiate an entity which does not exist: {}", spawn.1)}
+            _ => println!(
+                " Trying to instantiate an entity which does not exist: {}",
+                spawn.1
+            ),
         }
     }
 }
@@ -238,7 +240,7 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
         .build();
 }
 
-fn room_table(map_depth : i32) -> RandomTable {
+fn room_table(map_depth: i32) -> RandomTable {
     RandomTable::new()
         .add("Goblin", 10)
         .add("Orc", 1 + map_depth)
