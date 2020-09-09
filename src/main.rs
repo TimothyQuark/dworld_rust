@@ -1,7 +1,7 @@
 extern crate serde;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 
-use rltk::{GameState, Point, Rltk, RGB};
+use rltk::{GameState, Point, Rltk};
 use specs::prelude::*;
 
 mod components;
@@ -44,6 +44,8 @@ mod spawner;
 mod saveload_system;
 
 mod random_table;
+
+mod particle_system;
 
 pub struct State {
     ecs: World,
@@ -90,6 +92,8 @@ impl State {
         drop_items.run_now(&self.ecs);
         let mut item_remove = ItemRemoveSystem {};
         item_remove.run_now(&self.ecs);
+        let mut particles = particle_system::ParticleSpawnSystem {};
+        particles.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -247,6 +251,7 @@ impl GameState for State {
         }
 
         ctx.cls();
+        particle_system::cull_dead_particles(&mut self.ecs, ctx);
 
         match newrunstate {
             RunState::MainMenu { .. } => {}
@@ -480,6 +485,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<MeleePowerBonus>();
     gs.ecs.register::<DefenseBonus>();
     gs.ecs.register::<WantsToRemoveItem>();
+    gs.ecs.register::<ParticleLifetime>();
 
     let map: Map = Map::new_map_rooms_and_corridors(1);
     let (player_x, player_y) = map.rooms[0].center();
@@ -504,6 +510,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(gamelog::GameLog {
         entries: vec!["Welcome to Rusty Roguelike".to_string()],
     });
+    gs.ecs.insert(particle_system::ParticleBuilder::new());
 
     rltk::main_loop(context, gs)
 }

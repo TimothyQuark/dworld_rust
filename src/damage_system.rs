@@ -1,5 +1,4 @@
 use super::{gamelog::GameLog, CombatStats, Map, Name, Player, Position, RunState, SufferDamage};
-use rltk::console;
 use specs::prelude::*;
 
 pub struct DamageSystem {}
@@ -16,6 +15,7 @@ impl<'a> System<'a> for DamageSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (mut stats, mut damage, positions, mut map, entities) = data;
 
+        // Whenever an entity loses health, it will also lose blood (not just on death)
         for (entity, mut stats, damage) in (&entities, &mut stats, &damage).join() {
             stats.curr_hp -= damage.amount.iter().sum::<i32>();
             let pos = positions.get(entity);
