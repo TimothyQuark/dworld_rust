@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use super::random_table::RandomTable;
 use super::{
     AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, DefenseBonus, EquipmentSlot,
-    Equippable, InflictsDamage, Item, MeleePowerBonus, Monster, Name, Player, Position,
-    ProvidesHealing, Ranged, Rect, Renderable, SerializeMe, Viewshed, MAPWIDTH,
+    Equippable, HungerClock, HungerState, InflictsDamage, Item, MeleePowerBonus, Monster, Name,
+    Player, Position, ProvidesFood, ProvidesHealing, Ranged, Rect, Renderable, SerializeMe,
+    Viewshed, MAPWIDTH,
 };
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
@@ -24,6 +25,7 @@ fn room_table(map_depth: i32) -> RandomTable {
         .add("Shield", 3)
         .add("Longsword", map_depth - 1)
         .add("Tower Shield", map_depth - 1)
+        .add("Rations", 10)
 }
 
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
@@ -56,6 +58,10 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
             max_mana: 50,
             curr_mana: 50,
             power: 4,
+        })
+        .with(HungerClock {
+            state: HungerState::WellFed,
+            duration: 20,
         })
         .build()
 }
@@ -154,6 +160,7 @@ pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
             "Shield" => shield(ecs, x, y),
             "Longsword" => longsword(ecs, x, y),
             "Tower Shield" => tower_shield(ecs, x, y),
+            "Rations" => rations(ecs, x, y),
             _ => println!(
                 " Trying to instantiate an entity which does not exist: {}",
                 spawn.1
@@ -192,6 +199,25 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) {
         .with(Item {})
         .with(Consumable {})
         .with(ProvidesHealing { heal_amount: 8 })
+        .build();
+}
+
+fn rations(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437('%'),
+            fg: RGB::named(rltk::GREEN),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name {
+            name: "Rations".to_string(),
+        })
+        .with(Item {})
+        .with(ProvidesFood {})
+        .with(Consumable {})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 

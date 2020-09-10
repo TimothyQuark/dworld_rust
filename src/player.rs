@@ -1,6 +1,6 @@
 use super::{
-    CombatStats, GameLog, Item, Map, Monster, Player, Position, RunState, State, Viewshed,
-    WantsToMelee, WantsToPickupItem, TileType
+    CombatStats, GameLog, HungerClock, HungerState, Item, Map, Monster, Player, Position, RunState,
+    State, TileType, Viewshed, WantsToMelee, WantsToPickupItem,
 };
 use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
@@ -62,12 +62,12 @@ pub fn try_next_level(ecs: &mut World) -> bool {
         true
     } else {
         let mut gamelog = ecs.fetch_mut::<GameLog>();
-        gamelog.entries.push("There is no way down from here.".to_string());
+        gamelog
+            .entries
+            .push("There is no way down from here.".to_string());
         false
     }
 }
-
-
 
 pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player movement
@@ -134,7 +134,7 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
                 if try_next_level(&mut gs.ecs) {
                     return RunState::NextLevel;
                 }
-            },
+            }
 
             // Wait a turn
             (VirtualKeyCode::Space, ..) | (VirtualKeyCode::Comma, ..) => {
@@ -203,6 +203,16 @@ fn skip_turn(ecs: &mut World) -> RunState {
                     can_heal = false;
                 }
             }
+        }
+    }
+
+    let hunger_clocks = ecs.read_storage::<HungerClock>();
+    let hc = hunger_clocks.get(*player_entity);
+    if let Some(hc) = hc {
+        match hc.state {
+            HungerState::Hungry => can_heal = false,
+            HungerState::Starving => can_heal = false,
+            _ => {}
         }
     }
 

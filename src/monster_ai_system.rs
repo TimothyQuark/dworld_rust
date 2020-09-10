@@ -1,4 +1,7 @@
-use super::{Confusion, Map, Monster, Position, RunState, Viewshed, WantsToMelee, particle_system::ParticleBuilder};
+use super::{
+    particle_system::ParticleBuilder, Confusion, Map, Monster, Position, RunState, Viewshed,
+    WantsToMelee,
+};
 use rltk::Point;
 use specs::prelude::*;
 
@@ -17,7 +20,7 @@ impl<'a> System<'a> for MonsterAI {
         WriteStorage<'a, Position>,
         WriteStorage<'a, WantsToMelee>,
         WriteStorage<'a, Confusion>,
-        WriteExpect<'a, ParticleBuilder>
+        WriteExpect<'a, ParticleBuilder>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -32,7 +35,7 @@ impl<'a> System<'a> for MonsterAI {
             mut position,
             mut wants_to_melee,
             mut confused,
-            mut particle_builder
+            mut particle_builder,
         ) = data;
 
         if *runstate != RunState::MonsterTurn {
@@ -52,7 +55,14 @@ impl<'a> System<'a> for MonsterAI {
                 }
                 can_act = false;
 
-                particle_builder.request(pos.x, pos.y, rltk::RGB::named(rltk::MAGENTA), rltk::RGB::named(rltk::BLACK), rltk::to_cp437('?'), 600.0);
+                particle_builder.request(
+                    pos.x,
+                    pos.y,
+                    rltk::RGB::named(rltk::MAGENTA),
+                    rltk::RGB::named(rltk::BLACK),
+                    rltk::to_cp437('?'),
+                    600.0,
+                );
             }
 
             if can_act {
