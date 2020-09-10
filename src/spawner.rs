@@ -253,7 +253,6 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(Consumable {})
         .with(Ranged { range: 6 })
         .with(Confusion { turns: 4 })
-        .with(AreaOfEffect { radius: 3 })
         .build();
 }
 
