@@ -3,6 +3,4 @@
 Cargo.lock
 **/*.rs.bk
 
-.idea/
-
 savegame.json
