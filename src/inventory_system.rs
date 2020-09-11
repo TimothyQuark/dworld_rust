@@ -1,8 +1,8 @@
 use super::{
     gamelog::GameLog, particle_system::ParticleBuilder, AreaOfEffect, CombatStats, Confusion,
-    Consumable, Equippable, Equipped, HungerClock, HungerState, InBackpack, InflictsDamage, Map,
-    Name, Position, ProvidesFood, ProvidesHealing, SufferDamage, WantsToDropItem,
-    WantsToPickupItem, WantsToRemoveItem, WantsToUseItem,
+    Consumable, Equippable, Equipped, HungerClock, HungerState, InBackpack, InflictsDamage,
+    MagicMapper, Map, Name, Position, ProvidesFood, ProvidesHealing, RunState, SufferDamage,
+    WantsToDropItem, WantsToPickupItem, WantsToRemoveItem, WantsToUseItem,
 };
 use specs::prelude::*;
 
@@ -71,6 +71,8 @@ impl<'a> System<'a> for ItemUseSystem {
         ReadStorage<'a, Position>,
         ReadStorage<'a, ProvidesFood>,
         WriteStorage<'a, HungerClock>,
+        ReadStorage<'a, MagicMapper>,
+        WriteExpect<'a, RunState>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -95,6 +97,8 @@ impl<'a> System<'a> for ItemUseSystem {
             positions,
             provides_food,
             mut hunger_clocks,
+            magic_mapper,
+            mut runstate,
         ) = data;
 
         for (entity, useitem) in (&entities, &wants_use).join() {
@@ -317,6 +321,19 @@ impl<'a> System<'a> for ItemUseSystem {
                 confused
                     .insert(mob.0, Confusion { turns: mob.1 })
                     .expect("Unable to insert status");
+            }
+
+            // If its a magic mapper...
+            let is_mapper = magic_mapper.get(useitem.item);
+            match is_mapper {
+                None => {}
+                Some(_) => {
+                    used_item = true;
+                    gamelog
+                        .entries
+                        .push("The map is revealed to you!".to_string());
+                    *runstate = RunState::MagicMapReveal { row: 0 };
+                }
             }
 
             // If its a consumable, we delete it on use
