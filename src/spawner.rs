@@ -26,7 +26,7 @@ fn room_table(map_depth: i32) -> RandomTable {
         .add("Longsword", map_depth - 1)
         .add("Tower Shield", map_depth - 1)
         .add("Rations", 10)
-        .add("Magic Mapping Scroll", 400)
+        .add("Magic Mapping Scroll", 2)
 }
 
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {

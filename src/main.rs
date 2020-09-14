@@ -49,6 +49,8 @@ mod particle_system;
 
 mod hunger_system;
 
+mod rex_assets;
+
 pub struct State {
     ecs: World,
 }
@@ -541,6 +543,7 @@ fn main() -> rltk::BError {
         entries: vec!["Welcome to Rusty Roguelike".to_string()],
     });
     gs.ecs.insert(particle_system::ParticleBuilder::new());
+    gs.ecs.insert(rex_assets::RexAssets::new());
 
     rltk::main_loop(context, gs)
 }
