@@ -4,3 +4,4 @@ Cargo.lock
 **/*.rs.bk
 
 savegame.json
+python/.ipynb_checkpoints/Item_name_gen_testing-checkpoint.ipynb
