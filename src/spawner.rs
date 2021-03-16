@@ -4,31 +4,14 @@ use super::random_table::RandomTable;
 use super::{
     AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, DefenseBonus, EntryTrigger,
     EquipmentSlot, Equippable, Hidden, HungerClock, HungerState, InflictsDamage, Item, MagicMapper,
-    MeleePowerBonus, Monster, Name, Player, Position, ProvidesFood, ProvidesHealing, Ranged, Rect,
-    Renderable, SerializeMe, SingleActivation, Viewshed, MAPWIDTH,
+    Map, MeleePowerBonus, Monster, Name, Player, Position, ProvidesFood, ProvidesHealing, Ranged,
+    Rect, Renderable, SerializeMe, SingleActivation, TileType, Viewshed, MAPWIDTH,
 };
 use rltk::{RandomNumberGenerator, RGB};
 use specs::prelude::*;
 use specs::saveload::{MarkedBuilder, SimpleMarker};
 
 const MAX_MONSTERS: i32 = 4; // Max monsters that spawn in a room
-
-fn room_table(map_depth: i32) -> RandomTable {
-    RandomTable::new()
-        .add("Goblin", 10)
-        .add("Orc", 1 + map_depth)
-        .add("Health Potion", 7)
-        .add("Fireball Scroll", 2 + map_depth)
-        .add("Confusion Scroll", 2 + map_depth)
-        .add("Magic Missile Scroll", 4)
-        .add("Dagger", 3)
-        .add("Shield", 3)
-        .add("Longsword", map_depth - 1)
-        .add("Tower Shield", map_depth - 1)
-        .add("Rations", 10)
-        .add("Magic Mapping Scroll", 2)
-        .add("Bear Trap", 5)
-}
 
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
     ecs.create_entity()
@@ -68,17 +51,109 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
         .build()
 }
 
-pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
-    let roll: i32;
+fn room_table(map_depth: i32) -> RandomTable {
+    RandomTable::new()
+        .add("Goblin", 10)
+        .add("Orc", 1 + map_depth)
+        .add("Health Potion", 7)
+        .add("Fireball Scroll", 2 + map_depth)
+        .add("Confusion Scroll", 2 + map_depth)
+        .add("Magic Missile Scroll", 4)
+        .add("Dagger", 3)
+        .add("Shield", 3)
+        .add("Longsword", map_depth - 1)
+        .add("Tower Shield", map_depth - 1)
+        .add("Rations", 10)
+        .add("Magic Mapping Scroll", 2)
+        .add("Bear Trap", 5)
+}
+
+pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
+    let mut possible_targets: Vec<usize> = Vec::new();
+    {
+        // Borrow scope - to keep access to the map separated
+        let map = ecs.fetch::<Map>();
+        for y in room.y1 + 1..room.y2 {
+            for x in room.x1 + 1..room.x2 {
+                let idx = map.xy_idx(x, y);
+                if map.tiles[idx] == TileType::Floor {
+                    possible_targets.push(idx);
+                }
+            }
+        }
+    }
+
+    spawn_region(ecs, &possible_targets, map_depth);
+}
+
+pub fn spawn_region(ecs: &mut World, area: &[usize], map_depth: i32) {
+    let spawn_table = room_table(map_depth);
+    let mut spawn_points: HashMap<usize, String> = HashMap::new();
+    let mut areas: Vec<usize> = Vec::from(area);
+
+    // Scope to keep the borrow checker happy
     {
         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        roll = rng.roll_dice(1, 2);
+        let num_spawns = i32::min(
+            areas.len() as i32,
+            rng.roll_dice(1, MAX_MONSTERS + 3) + (map_depth - 1) - 3,
+        );
+        if num_spawns == 0 {
+            return;
+        }
+
+        for _i in 0..num_spawns {
+            let array_index = if areas.len() == 1 {
+                0usize
+            } else {
+                (rng.roll_dice(1, areas.len() as i32) - 1) as usize
+            };
+
+            let map_idx = areas[array_index];
+            spawn_points.insert(map_idx, spawn_table.roll(&mut rng));
+            areas.remove(array_index);
+        }
     }
-    match roll {
-        1 => orc(ecs, x, y),
-        _ => goblin(ecs, x, y),
+
+    // Actually spawn the monsters
+    for spawn in spawn_points.iter() {
+        spawn_entity(ecs, &spawn);
     }
 }
+
+fn spawn_entity(ecs: &mut World, spawn: &(&usize, &String)) {
+    let x = (*spawn.0 % MAPWIDTH) as i32;
+    let y = (*spawn.0 / MAPWIDTH) as i32;
+
+    match spawn.1.as_ref() {
+        "Goblin" => goblin(ecs, x, y),
+        "Orc" => orc(ecs, x, y),
+        "Health Potion" => health_potion(ecs, x, y),
+        "Fireball Scroll" => fireball_scroll(ecs, x, y),
+        "Confusion Scroll" => confusion_scroll(ecs, x, y),
+        "Magic Missile Scroll" => magic_missile_scroll(ecs, x, y),
+        "Dagger" => dagger(ecs, x, y),
+        "Shield" => shield(ecs, x, y),
+        "Longsword" => longsword(ecs, x, y),
+        "Tower Shield" => tower_shield(ecs, x, y),
+        "Rations" => rations(ecs, x, y),
+        "Magic Mapping Scroll" => magic_mapping_scroll(ecs, x, y),
+        "Bear Trap" => bear_trap(ecs, x, y),
+        _ => {}
+    }
+}
+
+// pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
+//     let roll: i32;
+//     {
+//         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+//         roll = rng.roll_dice(1, 2);
+//     }
+//     match roll {
+//         1 => orc(ecs, x, y),
+//         _ => goblin(ecs, x, y),
+//     }
+// }
 
 fn orc(ecs: &mut World, x: i32, y: i32) {
     monster(ecs, x, y, rltk::to_cp437('o'), "Orc");
@@ -117,74 +192,6 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
         })
         .with(BlocksTile {})
         .build();
-}
-
-#[allow(clippy::map_entry)]
-pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
-    let spawn_table = room_table(map_depth);
-    let mut spawn_points: HashMap<usize, String> = HashMap::new();
-
-    // Scope to keep the borrow checker happy
-    {
-        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        let num_spawns = rng.roll_dice(1, MAX_MONSTERS + 3) + (map_depth - 1) - 3;
-
-        for _i in 0..num_spawns {
-            let mut added = false;
-            let mut tries = 0;
-            while !added && tries < 20 {
-                let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
-                let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
-                let idx = (y * MAPWIDTH) + x;
-                if !spawn_points.contains_key(&idx) {
-                    spawn_points.insert(idx, spawn_table.roll(&mut rng));
-                    added = true;
-                } else {
-                    tries += 1;
-                }
-            }
-        }
-    }
-
-    // Actually spawn the monsters
-    for spawn in spawn_points.iter() {
-        let x = (*spawn.0 % MAPWIDTH) as i32;
-        let y = (*spawn.0 / MAPWIDTH) as i32;
-
-        match spawn.1.as_ref() {
-            "Goblin" => goblin(ecs, x, y),
-            "Orc" => orc(ecs, x, y),
-            "Health Potion" => health_potion(ecs, x, y),
-            "Fireball Scroll" => fireball_scroll(ecs, x, y),
-            "Confusion Scroll" => confusion_scroll(ecs, x, y),
-            "Magic Missile Scroll" => magic_missile_scroll(ecs, x, y),
-            "Dagger" => dagger(ecs, x, y),
-            "Shield" => shield(ecs, x, y),
-            "Longsword" => longsword(ecs, x, y),
-            "Tower Shield" => tower_shield(ecs, x, y),
-            "Rations" => rations(ecs, x, y),
-            "Magic Mapping Scroll" => magic_mapping_scroll(ecs, x, y),
-            "Bear Trap" => bear_trap(ecs, x, y),
-            _ => println!(
-                " Trying to instantiate an entity which does not exist: {}",
-                spawn.1
-            ),
-        }
-    }
-}
-
-fn random_item(ecs: &mut World, x: i32, y: i32) {
-    let roll: i32;
-    {
-        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        roll = rng.roll_dice(1, 4);
-    }
-    match roll {
-        1 => health_potion(ecs, x, y),
-        2 => fireball_scroll(ecs, x, y),
-        3 => confusion_scroll(ecs, x, y),
-        _ => magic_missile_scroll(ecs, x, y),
-    }
 }
 
 fn health_potion(ecs: &mut World, x: i32, y: i32) {

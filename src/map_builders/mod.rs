@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use specs::prelude::*;
 
 use super::{spawner, Map, Position, Rect, TileType, SHOW_MAPGEN_VISUALIZER};
@@ -28,6 +30,9 @@ pub fn random_builder(new_depth: i32) -> Box<dyn MapBuilder> {
     match builder {
         1 => Box::new(BspDungeonBuilder::new(new_depth)),
         2 => Box::new(BspInteriorBuilder::new(new_depth)),
+        3 => Box::new(CellularAutomataBuilder::new(new_depth)),
         _ => Box::new(SimpleMapBuilder::new(new_depth)),
     }
+
+    
 }
