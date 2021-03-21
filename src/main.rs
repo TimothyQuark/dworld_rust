@@ -473,7 +473,7 @@ impl GameState for State {
 
                 self.mapgen_timer += ctx.frame_time_ms;
                 // This timer sets how quickly mapgen is visualized.
-                if self.mapgen_timer > 400.0 {
+                if self.mapgen_timer > 200.0 {
                     self.mapgen_timer = 0.0;
                     self.mapgen_index += 1;
                     if self.mapgen_index >= self.mapgen_history.len() {
